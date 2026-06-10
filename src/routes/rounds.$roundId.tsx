@@ -12,8 +12,8 @@ export const Route = createFileRoute("/rounds/$roundId")({
   component: RoundPage,
 });
 
-// Standard par values for 18 holes
-const PARS = [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 3, 4, 4, 5];
+// Wodonga Golf Club par values for 18 holes (Par 72)
+const PARS = [4, 4, 4, 5, 4, 3, 5, 3, 4, 5, 3, 4, 4, 4, 4, 3, 4, 5];
 
 function scoreLabel(strokes: number, par: number) {
   const diff = strokes - par;
@@ -279,7 +279,7 @@ function RoundPage() {
                           const cur = parseInt(holeInputs[p.id] || "0", 10);
                           if (cur > 1) setHoleInputs({ ...holeInputs, [p.id]: String(cur - 1) });
                         }}
-                        className="w-9 h-9 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-lg transition-colors"
+                        className="w-12 h-12 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-2xl transition-colors"
                       >
                         −
                       </button>
@@ -300,7 +300,7 @@ function RoundPage() {
                           const cur = parseInt(holeInputs[p.id] || "0", 10);
                           setHoleInputs({ ...holeInputs, [p.id]: String(cur + 1) });
                         }}
-                        className="w-9 h-9 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-lg transition-colors"
+                        className="w-12 h-12 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-2xl transition-colors"
                       >
                         +
                       </button>
