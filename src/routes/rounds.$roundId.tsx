@@ -13,7 +13,7 @@ export const Route = createFileRoute("/rounds/$roundId")({
 });
 
 // Standard par values for 18 holes
-const PARS = [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 3, 4, 4, 5];
+const PARS = [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5];
 
 function scoreLabel(strokes: number, par: number) {
   const diff = strokes - par;

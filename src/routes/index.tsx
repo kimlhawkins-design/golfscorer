@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const PARS = [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 3, 4, 4, 5];
+const PARS = [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5];
 const COURSE_PAR = PARS.reduce((a, b) => a + b, 0);
 
 function Home() {
@@ -69,7 +69,7 @@ function Home() {
         {/* Picture */}
         {!showForm && (
           <img
-            src="/group.png"
+            src="/group.jpg"
             alt="Group"
             className="w-full rounded-2xl mb-8 shadow-lg border border-white/20 object-cover"
           />
