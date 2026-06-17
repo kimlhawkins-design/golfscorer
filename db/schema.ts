@@ -4,6 +4,8 @@ export const rounds = pgTable("rounds", {
   id: serial().primaryKey(),
   name: text().notNull().default("Round"),
   course: text().notNull().default("standard"),
+  // "stableford" = handicap-adjusted points scoring, "casual" = plain stroke play.
+  scoringType: text("scoring_type").notNull().default("stableford"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -13,6 +15,9 @@ export const players = pgTable("players", {
   name: text().notNull(),
   position: integer().notNull(),
   handicap: doublePrecision().notNull().default(0),
+  // Tee this player is playing from: "mens" or "womens". Determines which
+  // tee's stroke index and hole distances apply to this player's scoring.
+  tee: text().notNull().default("mens"),
 });
 
 export const scores = pgTable("scores", {

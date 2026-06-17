@@ -1,0 +1,1 @@
+ALTER TABLE "players" ADD COLUMN "tee" text DEFAULT 'mens' NOT NULL;

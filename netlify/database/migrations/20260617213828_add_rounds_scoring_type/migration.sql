@@ -1,0 +1,1 @@
+ALTER TABLE "rounds" ADD COLUMN "scoring_type" text DEFAULT 'stableford' NOT NULL;
