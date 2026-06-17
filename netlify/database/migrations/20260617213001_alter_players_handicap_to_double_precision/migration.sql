@@ -1,0 +1,1 @@
+ALTER TABLE "players" ALTER COLUMN "handicap" SET DATA TYPE double precision USING "handicap"::double precision;
