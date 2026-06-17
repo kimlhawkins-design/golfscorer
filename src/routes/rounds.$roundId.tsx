@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getRound, upsertScore } from "../server/golf.functions";
 import { getCourse } from "../courses";
+import { GpsRangefinder } from "../components/GpsRangefinder";
 
 export const Route = createFileRoute("/rounds/$roundId")({
   loader: async ({ params }) => {
@@ -35,7 +36,7 @@ function scoreBg(strokes: number | undefined, par: number) {
 }
 
 function RoundPage() {
-  const { round, players, scores } = Route.useLoaderData();
+  const { round, players, scores, holeLocations } = Route.useLoaderData();
   const router = useRouter();
   const upsertFn = useServerFn(upsertScore);
 
@@ -43,6 +44,7 @@ function RoundPage() {
   const PARS = course.pars;
 
   const [activeHole, setActiveHole] = useState<number | null>(null);
+  const [gpsHole, setGpsHole] = useState(1);
   const [holeInputs, setHoleInputs] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -89,6 +91,7 @@ function RoundPage() {
     }
     setHoleInputs(inputs);
     setActiveHole(hole);
+    setGpsHole(hole);
   };
 
   const saveHole = async () => {
@@ -250,6 +253,14 @@ function RoundPage() {
               })}
           </div>
         </div>
+
+        {/* GPS Rangefinder */}
+        <GpsRangefinder
+          course={round.course}
+          hole={gpsHole}
+          onHoleChange={setGpsHole}
+          locations={holeLocations}
+        />
 
         {/* Score Entry Panel */}
         {activeHole !== null && (

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../../db/index.js";
-import { rounds, players, scores } from "../../db/schema.js";
+import { rounds, players, scores, holeLocations } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
 
 export const getRounds = createServerFn().handler(async () => {
@@ -14,7 +14,11 @@ export const getRound = createServerFn({ method: "GET" })
     if (!round) return null;
     const roundPlayers = await db.select().from(players).where(eq(players.roundId, data.id)).orderBy(players.position);
     const roundScores = await db.select().from(scores).where(eq(scores.roundId, data.id));
-    return { round, players: roundPlayers, scores: roundScores };
+    const locations = await db
+      .select()
+      .from(holeLocations)
+      .where(eq(holeLocations.course, round.course));
+    return { round, players: roundPlayers, scores: roundScores, holeLocations: locations };
   });
 
 export const createRound = createServerFn({ method: "POST" })
@@ -67,5 +71,47 @@ export const deleteRound = createServerFn({ method: "POST" })
     await db.delete(scores).where(eq(scores.roundId, data.id));
     await db.delete(players).where(eq(players.roundId, data.id));
     await db.delete(rounds).where(eq(rounds.id, data.id));
+    return { success: true };
+  });
+
+// Mark the GPS coordinates of a hole's tee or green for a course. Keyed by
+// course + hole, so a marked location is reused across every round on that
+// course. Upserts in place to avoid duplicate rows.
+export const setHoleLocation = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      course: string;
+      holeNumber: number;
+      point: "tee" | "green";
+      lat: number;
+      lng: number;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const coords =
+      data.point === "green"
+        ? { greenLat: data.lat, greenLng: data.lng }
+        : { teeLat: data.lat, teeLng: data.lng };
+    const existing = await db
+      .select()
+      .from(holeLocations)
+      .where(
+        and(
+          eq(holeLocations.course, data.course),
+          eq(holeLocations.holeNumber, data.holeNumber),
+        ),
+      );
+    if (existing.length > 0) {
+      await db
+        .update(holeLocations)
+        .set(coords)
+        .where(eq(holeLocations.id, existing[0].id));
+    } else {
+      await db.insert(holeLocations).values({
+        course: data.course,
+        holeNumber: data.holeNumber,
+        ...coords,
+      });
+    }
     return { success: true };
   });
