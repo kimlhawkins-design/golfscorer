@@ -19,6 +19,7 @@ function Home() {
   const [roundName, setRoundName] = useState("");
   const [course, setCourse] = useState(DEFAULT_COURSE_KEY);
   const [playerNames, setPlayerNames] = useState(["", "", "", ""]);
+  const [playerHandicaps, setPlayerHandicaps] = useState(["", "", "", ""]);
   const [creating, setCreating] = useState(false);
 
   const createRoundFn = useServerFn(createRound);
@@ -26,12 +27,17 @@ function Home() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const names = playerNames.filter((n) => n.trim());
-    if (names.length < 2) return;
+    const entries = playerNames
+      .map((name, i) => ({
+        name: name.trim(),
+        handicap: Math.max(0, Math.round((parseFloat(playerHandicaps[i] || "0") || 0) * 10) / 10),
+      }))
+      .filter((p) => p.name);
+    if (entries.length < 2) return;
     setCreating(true);
     try {
       const round = await createRoundFn({
-        data: { name: roundName || "Round", course, playerNames: names },
+        data: { name: roundName || "Round", course, players: entries },
       });
       router.navigate({ to: "/rounds/$roundId", params: { roundId: String(round.id) } });
     } finally {
@@ -103,21 +109,37 @@ function Home() {
               </select>
             </div>
             <div className="mb-5">
-              <label className="block text-green-200 text-sm font-medium mb-2">Players (2–4)</label>
+              <label className="block text-green-200 text-sm font-medium mb-2">Players (2–4) &amp; Handicaps</label>
               <div className="space-y-2">
                 {playerNames.map((name, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    value={name}
-                    onChange={(e) => {
-                      const updated = [...playerNames];
-                      updated[i] = e.target.value;
-                      setPlayerNames(updated);
-                    }}
-                    placeholder={`Player ${i + 1}${i < 2 ? " (required)" : " (optional)"}`}
-                    className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
+                  <div key={i} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => {
+                        const updated = [...playerNames];
+                        updated[i] = e.target.value;
+                        setPlayerNames(updated);
+                      }}
+                      placeholder={`Player ${i + 1}${i < 2 ? " (required)" : " (optional)"}`}
+                      className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      inputMode="decimal"
+                      value={playerHandicaps[i]}
+                      onChange={(e) => {
+                        const updated = [...playerHandicaps];
+                        updated[i] = e.target.value;
+                        setPlayerHandicaps(updated);
+                      }}
+                      placeholder="Hcp"
+                      aria-label={`Player ${i + 1} handicap`}
+                      className="w-20 shrink-0 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 text-center focus:outline-none focus:ring-2 focus:ring-green-400"
+                    />
+                  </div>
                 ))}
               </div>
             </div>

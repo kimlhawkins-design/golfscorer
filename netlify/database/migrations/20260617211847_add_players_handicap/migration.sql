@@ -1,0 +1,1 @@
+ALTER TABLE "players" ADD COLUMN "handicap" integer DEFAULT 0 NOT NULL;

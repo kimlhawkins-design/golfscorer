@@ -12,6 +12,7 @@ export const players = pgTable("players", {
   roundId: integer("round_id").notNull().references(() => rounds.id),
   name: text().notNull(),
   position: integer().notNull(),
+  handicap: doublePrecision().notNull().default(0),
 });
 
 export const scores = pgTable("scores", {
