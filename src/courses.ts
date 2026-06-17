@@ -1,13 +1,25 @@
 // Golf course definitions. Each course has a stable `key` (stored on the round
-// in the database), an 18-hole `pars` array, and an 18-hole `strokeIndex` array.
-// The stroke index ranks holes 1–18 by difficulty (1 = hardest) and determines
-// the order in which a player's handicap strokes are allocated for Stableford
-// and net scoring.
+// in the database), an 18-hole `pars` array (par is the same off either tee),
+// and two tee sets — `mens` and `womens`. Each tee carries its own 18-hole
+// `strokeIndex` and `distances` (metres). The stroke index ranks holes 1–18 by
+// difficulty (1 = hardest) and determines the order in which a player's handicap
+// strokes are allocated for Stableford and net scoring; men's and women's cards
+// often rank the holes differently, so each tee keeps its own.
+export type Tee = {
+  // Holes 1–18 ranked by difficulty (1 = hardest).
+  strokeIndex: number[];
+  // Hole length in metres for this tee.
+  distances: number[];
+};
+
+export type TeeKey = "mens" | "womens";
+
 export type Course = {
   key: string;
   name: string;
   pars: number[];
-  strokeIndex: number[];
+  mens: Tee;
+  womens: Tee;
 };
 
 export const COURSES: Course[] = [
@@ -15,25 +27,53 @@ export const COURSES: Course[] = [
     key: "standard",
     name: "Wodonga",
     pars: [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5],
-    strokeIndex: [3, 7, 17, 1, 5, 15, 9, 11, 13, 4, 18, 8, 2, 6, 10, 16, 12, 14],
+    mens: {
+      strokeIndex: [3, 7, 17, 1, 5, 15, 9, 11, 13, 4, 18, 8, 2, 6, 10, 16, 12, 14],
+      distances: [360, 375, 165, 340, 480, 155, 385, 350, 470, 400, 170, 365, 490, 355, 345, 160, 370, 465],
+    },
+    womens: {
+      strokeIndex: [5, 3, 17, 7, 1, 15, 9, 13, 11, 4, 18, 6, 2, 8, 10, 16, 14, 12],
+      distances: [315, 330, 130, 300, 425, 120, 335, 305, 410, 350, 135, 320, 430, 310, 300, 125, 325, 405],
+    },
   },
   {
     key: "albury-commercial",
     name: "Albury Commercial",
     pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
-    strokeIndex: [5, 1, 7, 17, 9, 11, 15, 3, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
+    mens: {
+      strokeIndex: [5, 1, 7, 17, 9, 11, 15, 3, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
+      distances: [370, 470, 360, 160, 380, 350, 165, 480, 355, 365, 345, 155, 490, 375, 340, 170, 360, 465],
+    },
+    womens: {
+      strokeIndex: [3, 1, 9, 17, 5, 11, 15, 7, 13, 8, 6, 18, 2, 12, 10, 16, 14, 4],
+      distances: [325, 415, 315, 130, 335, 305, 130, 420, 310, 320, 300, 125, 430, 330, 300, 135, 315, 410],
+    },
   },
   {
     key: "thurgoona",
     name: "Thurgoona",
     pars: [5, 4, 4, 3, 4, 4, 5, 3, 4, 4, 3, 4, 4, 5, 3, 4, 4, 5],
-    strokeIndex: [1, 9, 7, 17, 11, 5, 3, 15, 13, 8, 18, 10, 6, 2, 16, 12, 14, 4],
+    mens: {
+      strokeIndex: [1, 9, 7, 17, 11, 5, 3, 15, 13, 8, 18, 10, 6, 2, 16, 12, 14, 4],
+      distances: [475, 360, 350, 160, 370, 345, 470, 155, 365, 355, 165, 360, 340, 480, 170, 350, 365, 465],
+    },
+    womens: {
+      strokeIndex: [3, 7, 9, 17, 5, 11, 1, 15, 13, 6, 18, 8, 10, 2, 16, 12, 14, 4],
+      distances: [420, 315, 305, 130, 325, 300, 415, 125, 320, 310, 135, 315, 300, 425, 140, 305, 320, 410],
+    },
   },
   {
     key: "howlong",
     name: "Howlong",
     pars: [4, 4, 5, 3, 4, 4, 4, 3, 5, 5, 4, 3, 4, 4, 4, 3, 5, 4],
-    strokeIndex: [7, 11, 1, 17, 5, 9, 13, 15, 3, 4, 8, 18, 6, 10, 12, 16, 2, 14],
+    mens: {
+      strokeIndex: [7, 11, 1, 17, 5, 9, 13, 15, 3, 4, 8, 18, 6, 10, 12, 16, 2, 14],
+      distances: [360, 350, 470, 160, 375, 345, 365, 165, 480, 475, 355, 155, 370, 340, 360, 170, 465, 350],
+    },
+    womens: {
+      strokeIndex: [5, 9, 3, 17, 7, 11, 13, 15, 1, 4, 8, 18, 6, 10, 12, 16, 2, 14],
+      distances: [315, 305, 415, 130, 330, 300, 320, 130, 420, 420, 310, 125, 325, 300, 315, 135, 410, 305],
+    },
   },
 ];
 
@@ -44,6 +84,11 @@ export function getCourse(key: string | null | undefined): Course {
     COURSES.find((c) => c.key === key) ??
     COURSES.find((c) => c.key === DEFAULT_COURSE_KEY)!
   );
+}
+
+// Resolve the tee set (men's or women's) for a course.
+export function getTee(course: Course, tee: TeeKey): Tee {
+  return tee === "womens" ? course.womens : course.mens;
 }
 
 // Number of handicap strokes a player receives on a hole, given their course

@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getRound, upsertScore, updatePlayerHandicap } from "../server/golf.functions";
-import { getCourse, stablefordPoints, strokesReceived } from "../courses";
+import { getRound, upsertScore, updatePlayerHandicap, updatePlayerTee } from "../server/golf.functions";
+import { getCourse, getTee, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
 import { GpsRangefinder } from "../components/GpsRangefinder";
 
 export const Route = createFileRoute("/rounds/$roundId")({
@@ -50,18 +50,30 @@ function RoundPage() {
   const router = useRouter();
   const upsertFn = useServerFn(upsertScore);
   const updateHandicapFn = useServerFn(updatePlayerHandicap);
+  const updateTeeFn = useServerFn(updatePlayerTee);
 
   const course = getCourse(round.course);
   const PARS = course.pars;
-  const SI = course.strokeIndex;
 
-  const [scoringMode, setScoringMode] = useState<"stableford" | "stroke">("stableford");
+  // Tee shown in the scorecard's reference SI/metres columns. Each player's own
+  // tee (see teeOf/siOf below) is what actually drives their scoring.
+  const [tee, setTee] = useState<TeeKey>("mens");
+  const activeTee = getTee(course, tee);
+  const SI = activeTee.strokeIndex;
+  const DIST = activeTee.distances;
+  const totalDistance = DIST.reduce((a, b) => a + b, 0);
+
+
+  const [scoringMode, setScoringMode] = useState<"stableford" | "stroke">(
+    round.scoringType === "casual" ? "stroke" : "stableford",
+  );
   const [activeHole, setActiveHole] = useState<number | null>(null);
   const [gpsHole, setGpsHole] = useState(1);
   const [holeInputs, setHoleInputs] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
   const [editingHcp, setEditingHcp] = useState(false);
   const [hcpInputs, setHcpInputs] = useState<Record<number, string>>({});
+  const [teeInputs, setTeeInputs] = useState<Record<number, TeeKey>>({});
   const [savingHcp, setSavingHcp] = useState(false);
 
   // Build a map: playerId -> holeNumber -> strokes
@@ -75,6 +87,15 @@ function RoundPage() {
 
   const handicapOf = (playerId: number) =>
     players.find((p) => p.id === playerId)?.handicap ?? 0;
+
+  // The tee a player is playing from, and that tee's 18-hole stroke index.
+  // Handicap strokes (and therefore Stableford/net scoring) are allocated using
+  // the player's own tee's stroke index, so different players in the same round
+  // can play different tees.
+  const teeOf = (playerId: number): TeeKey =>
+    players.find((p) => p.id === playerId)?.tee === "womens" ? "womens" : "mens";
+
+  const siOf = (playerId: number) => getTee(course, teeOf(playerId)).strokeIndex;
 
   const playerTotal = (playerId: number) => {
     let total = 0;
@@ -98,7 +119,7 @@ function RoundPage() {
   const holePoints = (playerId: number, hole: number) => {
     const s = getScore(playerId, hole);
     if (s === undefined) return undefined;
-    return stablefordPoints(s, PARS[hole - 1], handicapOf(playerId), SI[hole - 1]);
+    return stablefordPoints(s, PARS[hole - 1], handicapOf(playerId), siOf(playerId)[hole - 1]);
   };
 
   // Total Stableford points across the holes a player has scored.
@@ -159,8 +180,13 @@ function RoundPage() {
 
   const openHcpEditor = () => {
     const inputs: Record<number, string> = {};
-    for (const p of players) inputs[p.id] = String(p.handicap ?? 0);
+    const tees: Record<number, TeeKey> = {};
+    for (const p of players) {
+      inputs[p.id] = String(p.handicap ?? 0);
+      tees[p.id] = p.tee === "womens" ? "womens" : "mens";
+    }
     setHcpInputs(inputs);
+    setTeeInputs(tees);
     setEditingHcp(true);
   };
 
@@ -172,6 +198,10 @@ function RoundPage() {
         const next = Math.max(0, Math.round((parseFloat(raw ?? "") || 0) * 10) / 10);
         if (next !== (p.handicap ?? 0)) {
           await updateHandicapFn({ data: { playerId: p.id, handicap: next } });
+        }
+        const nextTee = teeInputs[p.id] ?? "mens";
+        if (nextTee !== (p.tee === "womens" ? "womens" : "mens")) {
+          await updateTeeFn({ data: { playerId: p.id, tee: nextTee } });
         }
       }
       setEditingHcp(false);
@@ -192,6 +222,7 @@ function RoundPage() {
             <th className="text-left py-2 px-2 text-green-300 font-semibold w-10">Hole</th>
             <th className="text-center py-2 px-2 text-green-300 font-semibold w-8">Par</th>
             <th className="text-center py-2 px-2 text-green-300/70 font-semibold w-8">SI</th>
+            <th className="text-center py-2 px-2 text-green-300/70 font-semibold w-12">Mtrs</th>
             {players.map((p) => (
               <th key={p.id} className="text-center py-2 px-2 text-white font-semibold min-w-[64px]">
                 {p.name}
@@ -214,6 +245,7 @@ function RoundPage() {
                 <td className="py-2.5 px-2 font-bold text-white">{hole}</td>
                 <td className="py-2.5 px-2 text-center text-green-400">{par}</td>
                 <td className="py-2.5 px-2 text-center text-green-300/50 text-xs">{SI[hole - 1]}</td>
+                <td className="py-2.5 px-2 text-center text-green-300/50 text-xs tabular-nums">{DIST[hole - 1]}</td>
                 {players.map((p) => {
                   const s = getScore(p.id, hole);
                   if (scoringMode === "stableford") {
@@ -255,6 +287,9 @@ function RoundPage() {
               {holes.reduce((s, h) => s + PARS[h - 1], 0)}
             </td>
             <td className="py-2 px-2"></td>
+            <td className="py-2 px-2 text-center text-green-300/70 text-xs tabular-nums">
+              {holes.reduce((s, h) => s + DIST[h - 1], 0)}
+            </td>
             {players.map((p) => {
               const hasScores = holes.some((h) => getScore(p.id, h) !== undefined);
               const sub = holes.reduce((sum, h) => {
@@ -286,7 +321,7 @@ function RoundPage() {
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-white">{round.name}</h1>
             <p className="text-green-400 text-sm">
-              {course.name} · Par {PARS.reduce((a, b) => a + b, 0)} ·{" "}
+              {course.name} · {round.scoringType === "casual" ? "Casual" : "Stableford"} · Par {PARS.reduce((a, b) => a + b, 0)} ·{" "}
               {new Date(round.createdAt).toLocaleDateString("en-US", {
                 weekday: "long", month: "long", day: "numeric", year: "numeric",
               })}
@@ -360,7 +395,9 @@ function RoundPage() {
                         </div>
                       </>
                     )}
-                    <div className="text-white/40 text-xs">Hcp {p.handicap ?? 0} · {holes}/18</div>
+                    <div className="text-white/40 text-xs">
+                      Hcp {p.handicap ?? 0} · {teeOf(p.id) === "womens" ? "W" : "M"} · {holes}/18
+                    </div>
                   </div>
                 );
               })}
@@ -370,7 +407,7 @@ function RoundPage() {
         {/* Handicaps */}
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-4 mb-6">
           <div className="flex items-center justify-between mb-3 gap-2">
-            <h2 className="text-green-300 text-xs font-semibold uppercase tracking-wider">Handicaps</h2>
+            <h2 className="text-green-300 text-xs font-semibold uppercase tracking-wider">Handicaps &amp; Tees</h2>
             {!editingHcp ? (
               <button
                 onClick={openHcpEditor}
@@ -398,21 +435,46 @@ function RoundPage() {
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {players.map((p) => (
-              <div key={p.id} className="bg-white/10 rounded-xl p-3 flex items-center justify-between gap-2">
-                <span className="text-white text-sm font-medium truncate">{p.name}</span>
+              <div key={p.id} className="bg-white/10 rounded-xl p-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-white text-sm font-medium truncate">{p.name}</span>
+                  {editingHcp ? (
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      inputMode="decimal"
+                      value={hcpInputs[p.id] ?? ""}
+                      onChange={(e) => setHcpInputs({ ...hcpInputs, [p.id]: e.target.value })}
+                      aria-label={`${p.name} handicap`}
+                      className="w-14 shrink-0 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-white text-center focus:outline-none focus:ring-2 focus:ring-green-400"
+                    />
+                  ) : (
+                    <span className="text-green-300 font-bold tabular-nums shrink-0">{p.handicap ?? 0}</span>
+                  )}
+                </div>
                 {editingHcp ? (
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    inputMode="decimal"
-                    value={hcpInputs[p.id] ?? ""}
-                    onChange={(e) => setHcpInputs({ ...hcpInputs, [p.id]: e.target.value })}
-                    aria-label={`${p.name} handicap`}
-                    className="w-14 shrink-0 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-white text-center focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
+                  <div className="flex rounded-lg overflow-hidden border border-white/20 text-[11px]">
+                    {(["mens", "womens"] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTeeInputs({ ...teeInputs, [p.id]: t })}
+                        aria-label={`${p.name} ${t === "mens" ? "men's" : "women's"} tee`}
+                        className={`flex-1 px-2 py-1 font-semibold transition-colors ${
+                          (teeInputs[p.id] ?? "mens") === t
+                            ? "bg-green-500 text-white"
+                            : "bg-white/5 text-green-200 hover:bg-white/10"
+                        }`}
+                      >
+                        {t === "mens" ? "Men's" : "Women's"}
+                      </button>
+                    ))}
+                  </div>
                 ) : (
-                  <span className="text-green-300 font-bold tabular-nums shrink-0">{p.handicap ?? 0}</span>
+                  <span className="text-green-400/80 text-xs">
+                    {teeOf(p.id) === "womens" ? "Women's tee" : "Men's tee"}
+                  </span>
                 )}
               </div>
             ))}
@@ -433,7 +495,9 @@ function RoundPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-white font-bold text-lg">Hole {activeHole}</h3>
-                <p className="text-green-300 text-sm">Par {PARS[activeHole - 1]}</p>
+                <p className="text-green-300 text-sm">
+                  Par {PARS[activeHole - 1]} · {DIST[activeHole - 1]} m · SI {SI[activeHole - 1]}
+                </p>
               </div>
               <button
                 onClick={() => setActiveHole(null)}
@@ -447,10 +511,10 @@ function RoundPage() {
                 const strokes = holeInputs[p.id] ? parseInt(holeInputs[p.id], 10) : undefined;
                 const par = PARS[activeHole - 1];
                 const label = strokes ? scoreLabel(strokes, par) : null;
-                const recv = strokesReceived(handicapOf(p.id), SI[activeHole - 1]);
+                const recv = strokesReceived(handicapOf(p.id), siOf(p.id)[activeHole - 1]);
                 const pts =
                   strokes !== undefined
-                    ? stablefordPoints(strokes, par, handicapOf(p.id), SI[activeHole - 1])
+                    ? stablefordPoints(strokes, par, handicapOf(p.id), siOf(p.id)[activeHole - 1])
                     : undefined;
                 return (
                   <div key={p.id} className="flex items-center justify-between gap-3 bg-white/5 rounded-2xl p-3">
@@ -531,9 +595,29 @@ function RoundPage() {
 
         {/* Scorecard */}
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl overflow-hidden mb-6">
-          <div className="px-4 py-3 border-b border-white/20">
-            <h2 className="text-white font-bold">Scorecard</h2>
-            <p className="text-green-400 text-xs">Tap a hole to enter scores</p>
+          <div className="px-4 py-3 border-b border-white/20 flex items-center justify-between gap-2">
+            <div>
+              <h2 className="text-white font-bold">Scorecard</h2>
+              <p className="text-green-400 text-xs">Tap a hole to enter scores</p>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex rounded-lg overflow-hidden border border-white/20 text-xs">
+                {(["mens", "womens"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTee(t)}
+                    className={`px-3 py-1.5 font-semibold transition-colors ${
+                      tee === t
+                        ? "bg-green-500 text-white"
+                        : "bg-white/5 text-green-200 hover:bg-white/10"
+                    }`}
+                  >
+                    {t === "mens" ? "Men's" : "Women's"}
+                  </button>
+                ))}
+              </div>
+              <span className="text-green-400/70 text-[10px] tabular-nums">{totalDistance} m · {tee === "womens" ? "Women's" : "Men's"} card</span>
+            </div>
           </div>
 
           {/* Front 9 */}
@@ -558,6 +642,9 @@ function RoundPage() {
                     {PARS.reduce((a, b) => a + b, 0)}
                   </td>
                   <td className="py-3 px-2 w-8"></td>
+                  <td className="py-3 px-2 text-center text-green-300/70 text-xs tabular-nums w-12">
+                    {totalDistance}
+                  </td>
                   {players.map((p) => {
                     const total = playerTotal(p.id);
                     const toPar = playerToPar(p.id);

@@ -26,19 +26,25 @@ export const createRound = createServerFn({ method: "POST" })
     (data: {
       name: string;
       course?: string;
-      players: { name: string; handicap: number }[];
+      scoringType?: "stableford" | "casual";
+      players: { name: string; handicap: number; tee?: "mens" | "womens" }[];
     }) => data,
   )
   .handler(async ({ data }) => {
     const [round] = await db
       .insert(rounds)
-      .values({ name: data.name, course: data.course ?? "standard" })
+      .values({
+        name: data.name,
+        course: data.course ?? "standard",
+        scoringType: data.scoringType ?? "stableford",
+      })
       .returning();
     const playerInserts = data.players.map((p, i) => ({
       roundId: round.id,
       name: p.name,
       position: i + 1,
       handicap: p.handicap,
+      tee: p.tee ?? "mens",
     }));
     await db.insert(players).values(playerInserts);
     return round;
@@ -50,6 +56,16 @@ export const updatePlayerHandicap = createServerFn({ method: "POST" })
     await db
       .update(players)
       .set({ handicap: data.handicap })
+      .where(eq(players.id, data.playerId));
+    return { success: true };
+  });
+
+export const updatePlayerTee = createServerFn({ method: "POST" })
+  .inputValidator((data: { playerId: number; tee: "mens" | "womens" }) => data)
+  .handler(async ({ data }) => {
+    await db
+      .update(players)
+      .set({ tee: data.tee })
       .where(eq(players.id, data.playerId));
     return { success: true };
   });

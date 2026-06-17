@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getRounds, createRound, deleteRound } from "../server/golf.functions";
-import { COURSES, DEFAULT_COURSE_KEY, getCourse } from "../courses";
+import { COURSES, DEFAULT_COURSE_KEY, getCourse, type TeeKey } from "../courses";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -18,8 +18,10 @@ function Home() {
   const [showForm, setShowForm] = useState(false);
   const [roundName, setRoundName] = useState("");
   const [course, setCourse] = useState(DEFAULT_COURSE_KEY);
+  const [scoringType, setScoringType] = useState<"stableford" | "casual">("stableford");
   const [playerNames, setPlayerNames] = useState(["", "", "", ""]);
   const [playerHandicaps, setPlayerHandicaps] = useState(["", "", "", ""]);
+  const [playerTees, setPlayerTees] = useState<TeeKey[]>(["mens", "mens", "mens", "mens"]);
   const [creating, setCreating] = useState(false);
 
   const createRoundFn = useServerFn(createRound);
@@ -31,13 +33,14 @@ function Home() {
       .map((name, i) => ({
         name: name.trim(),
         handicap: Math.max(0, Math.round((parseFloat(playerHandicaps[i] || "0") || 0) * 10) / 10),
+        tee: playerTees[i],
       }))
       .filter((p) => p.name);
     if (entries.length < 2) return;
     setCreating(true);
     try {
       const round = await createRoundFn({
-        data: { name: roundName || "Round", course, players: entries },
+        data: { name: roundName || "Round", course, scoringType, players: entries },
       });
       router.navigate({ to: "/rounds/$roundId", params: { roundId: String(round.id) } });
     } finally {
@@ -108,37 +111,83 @@ function Home() {
                 ))}
               </select>
             </div>
+            <div className="mb-4">
+              <label className="block text-green-200 text-sm font-medium mb-1">Round Type</label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: "stableford", label: "Stableford", hint: "Handicap points" },
+                  { key: "casual", label: "Casual", hint: "Stroke play" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setScoringType(opt.key)}
+                    className={`rounded-lg px-3 py-2 text-left border transition-colors ${
+                      scoringType === opt.key
+                        ? "bg-green-500 border-green-400 text-white"
+                        : "bg-white/10 border-white/20 text-green-100 hover:bg-white/20"
+                    }`}
+                  >
+                    <div className="font-semibold text-sm">{opt.label}</div>
+                    <div className="text-xs opacity-80">{opt.hint}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="mb-5">
-              <label className="block text-green-200 text-sm font-medium mb-2">Players (2–4) &amp; Handicaps</label>
-              <div className="space-y-2">
+              <label className="block text-green-200 text-sm font-medium mb-2">Players (2–4), Handicaps &amp; Tees</label>
+              <div className="space-y-3">
                 {playerNames.map((name, i) => (
-                  <div key={i} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => {
-                        const updated = [...playerNames];
-                        updated[i] = e.target.value;
-                        setPlayerNames(updated);
-                      }}
-                      placeholder={`Player ${i + 1}${i < 2 ? " (required)" : " (optional)"}`}
-                      className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      inputMode="decimal"
-                      value={playerHandicaps[i]}
-                      onChange={(e) => {
-                        const updated = [...playerHandicaps];
-                        updated[i] = e.target.value;
-                        setPlayerHandicaps(updated);
-                      }}
-                      placeholder="Hcp"
-                      aria-label={`Player ${i + 1} handicap`}
-                      className="w-20 shrink-0 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 text-center focus:outline-none focus:ring-2 focus:ring-green-400"
-                    />
+                  <div key={i} className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                          const updated = [...playerNames];
+                          updated[i] = e.target.value;
+                          setPlayerNames(updated);
+                        }}
+                        placeholder={`Player ${i + 1}${i < 2 ? " (required)" : " (optional)"}`}
+                        className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        inputMode="decimal"
+                        value={playerHandicaps[i]}
+                        onChange={(e) => {
+                          const updated = [...playerHandicaps];
+                          updated[i] = e.target.value;
+                          setPlayerHandicaps(updated);
+                        }}
+                        placeholder="Hcp"
+                        aria-label={`Player ${i + 1} handicap`}
+                        className="w-20 shrink-0 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 text-center focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <div className="flex rounded-lg overflow-hidden border border-white/20 text-xs w-fit">
+                      {(["mens", "womens"] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => {
+                            const updated = [...playerTees];
+                            updated[i] = t;
+                            setPlayerTees(updated);
+                          }}
+                          aria-label={`Player ${i + 1} ${t === "mens" ? "men's" : "women's"} tee`}
+                          className={`px-3 py-1.5 font-semibold transition-colors ${
+                            playerTees[i] === t
+                              ? "bg-green-500 text-white"
+                              : "bg-white/5 text-green-200 hover:bg-white/10"
+                          }`}
+                        >
+                          {t === "mens" ? "Men's tee" : "Women's tee"}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -177,6 +226,7 @@ function Home() {
                     <div className="text-white font-semibold">{round.name}</div>
                     <div className="text-green-400 text-sm">
                       {getCourse(round.course).name} ·{" "}
+                      {round.scoringType === "casual" ? "Casual" : "Stableford"} ·{" "}
                       {new Date(round.createdAt).toLocaleDateString("en-US", {
                         weekday: "short", month: "short", day: "numeric",
                       })}
