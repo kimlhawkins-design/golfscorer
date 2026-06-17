@@ -1,0 +1,1 @@
+ALTER TABLE "rounds" ADD COLUMN "course" text DEFAULT 'standard' NOT NULL;

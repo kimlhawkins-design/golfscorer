@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getRound, upsertScore } from "../server/golf.functions";
+import { getCourse } from "../courses";
 
 export const Route = createFileRoute("/rounds/$roundId")({
   loader: async ({ params }) => {
@@ -11,9 +12,6 @@ export const Route = createFileRoute("/rounds/$roundId")({
   },
   component: RoundPage,
 });
-
-// Standard par values for 18 holes
-const PARS = [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5];
 
 function scoreLabel(strokes: number, par: number) {
   const diff = strokes - par;
@@ -40,6 +38,9 @@ function RoundPage() {
   const { round, players, scores } = Route.useLoaderData();
   const router = useRouter();
   const upsertFn = useServerFn(upsertScore);
+
+  const course = getCourse(round.course);
+  const PARS = course.pars;
 
   const [activeHole, setActiveHole] = useState<number | null>(null);
   const [holeInputs, setHoleInputs] = useState<Record<number, string>>({});
@@ -202,6 +203,7 @@ function RoundPage() {
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-white">{round.name}</h1>
             <p className="text-green-400 text-sm">
+              {course.name} · Par {PARS.reduce((a, b) => a + b, 0)} ·{" "}
               {new Date(round.createdAt).toLocaleDateString("en-US", {
                 weekday: "long", month: "long", day: "numeric", year: "numeric",
               })}
