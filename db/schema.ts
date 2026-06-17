@@ -3,6 +3,7 @@ import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
 export const rounds = pgTable("rounds", {
   id: serial().primaryKey(),
   name: text().notNull().default("Round"),
+  course: text().notNull().default("standard"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

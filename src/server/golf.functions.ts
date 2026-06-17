@@ -18,9 +18,12 @@ export const getRound = createServerFn({ method: "GET" })
   });
 
 export const createRound = createServerFn({ method: "POST" })
-  .inputValidator((data: { name: string; playerNames: string[] }) => data)
+  .inputValidator((data: { name: string; course?: string; playerNames: string[] }) => data)
   .handler(async ({ data }) => {
-    const [round] = await db.insert(rounds).values({ name: data.name }).returning();
+    const [round] = await db
+      .insert(rounds)
+      .values({ name: data.name, course: data.course ?? "standard" })
+      .returning();
     const playerInserts = data.playerNames.map((name, i) => ({
       roundId: round.id,
       name,

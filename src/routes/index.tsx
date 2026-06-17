@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getRounds, createRound, deleteRound } from "../server/golf.functions";
+import { COURSES, DEFAULT_COURSE_KEY, getCourse } from "../courses";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -11,14 +12,12 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const PARS = [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5];
-const COURSE_PAR = PARS.reduce((a, b) => a + b, 0);
-
 function Home() {
   const { rounds } = Route.useLoaderData();
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [roundName, setRoundName] = useState("");
+  const [course, setCourse] = useState(DEFAULT_COURSE_KEY);
   const [playerNames, setPlayerNames] = useState(["", "", "", ""]);
   const [creating, setCreating] = useState(false);
 
@@ -32,7 +31,7 @@ function Home() {
     setCreating(true);
     try {
       const round = await createRoundFn({
-        data: { name: roundName || "Round", playerNames: names },
+        data: { name: roundName || "Round", course, playerNames: names },
       });
       router.navigate({ to: "/rounds/$roundId", params: { roundId: String(round.id) } });
     } finally {
@@ -89,6 +88,20 @@ function Home() {
                 className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
               />
             </div>
+            <div className="mb-4">
+              <label className="block text-green-200 text-sm font-medium mb-1">Course</label>
+              <select
+                value={course}
+                onChange={(e) => setCourse(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400 [&>option]:text-black"
+              >
+                {COURSES.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.name} (Par {c.pars.reduce((a, b) => a + b, 0)})
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="mb-5">
               <label className="block text-green-200 text-sm font-medium mb-2">Players (2–4)</label>
               <div className="space-y-2">
@@ -141,6 +154,7 @@ function Home() {
                   >
                     <div className="text-white font-semibold">{round.name}</div>
                     <div className="text-green-400 text-sm">
+                      {getCourse(round.course).name} ·{" "}
                       {new Date(round.createdAt).toLocaleDateString("en-US", {
                         weekday: "short", month: "short", day: "numeric",
                       })}
@@ -176,7 +190,7 @@ function Home() {
 
         {/* Footer */}
         <div className="text-center text-white/20 text-xs mt-12">
-          Par {COURSE_PAR} · 18 Holes
+          18 Holes
         </div>
       </div>
     </div>
