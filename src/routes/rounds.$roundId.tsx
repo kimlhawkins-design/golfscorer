@@ -272,45 +272,41 @@ function RoundPage() {
                 const par = PARS[activeHole - 1];
                 const label = strokes ? scoreLabel(strokes, par) : null;
                 return (
-                  <div key={p.id} className="flex items-center gap-3">
-                    <span className="text-white font-medium w-24 truncate">{p.name}</span>
-                    <div className="flex items-center gap-2 flex-1">
+                  <div key={p.id} className="flex items-center justify-between gap-3 bg-white/5 rounded-2xl p-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-white font-semibold truncate">{p.name}</span>
+                      {label && (
+                        <span className={`mt-1 self-start text-xs font-bold px-2 py-0.5 rounded-full ${label.color}`}>
+                          {label.label}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
                       <button
                         type="button"
+                        aria-label={`Decrease ${p.name}'s score`}
                         onClick={() => {
                           const cur = parseInt(holeInputs[p.id] || "0", 10);
                           if (cur > 1) setHoleInputs({ ...holeInputs, [p.id]: String(cur - 1) });
                         }}
-                        className="w-9 h-9 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-lg transition-colors"
+                        className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
                       >
                         −
                       </button>
-                      <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={holeInputs[p.id] ?? ""}
-                        onChange={(e) =>
-                          setHoleInputs({ ...holeInputs, [p.id]: e.target.value })
-                        }
-                        placeholder="—"
-                        className="w-14 text-center bg-white/20 border border-white/30 rounded-lg py-2 text-white font-bold text-lg focus:outline-none focus:ring-2 focus:ring-green-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-                      />
+                      <span className="w-12 text-center text-white font-bold text-3xl tabular-nums">
+                        {strokes ?? "—"}
+                      </span>
                       <button
                         type="button"
+                        aria-label={`Increase ${p.name}'s score`}
                         onClick={() => {
                           const cur = parseInt(holeInputs[p.id] || "0", 10);
                           setHoleInputs({ ...holeInputs, [p.id]: String(cur + 1) });
                         }}
-                        className="w-9 h-9 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-lg transition-colors"
+                        className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
                       >
                         +
                       </button>
-                      {label && (
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${label.color}`}>
-                          {label.label}
-                        </span>
-                      )}
                     </div>
                   </div>
                 );
