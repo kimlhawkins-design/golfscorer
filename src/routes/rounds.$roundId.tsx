@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getRound, upsertScore, updatePlayerHandicap, updatePlayerTee } from "../server/golf.functions";
-import { getCourse, getTee, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
+import { getCourse, getTee, parsFor, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
 import { GpsRangefinder } from "../components/GpsRangefinder";
 
 export const Route = createFileRoute("/rounds/$roundId")({
@@ -53,14 +53,16 @@ function RoundPage() {
   const updateTeeFn = useServerFn(updatePlayerTee);
 
   const course = getCourse(round.course);
-  const PARS = course.pars;
 
-  // Tee shown in the scorecard's reference SI/metres columns. Each player's own
-  // tee (see teeOf/siOf below) is what actually drives their scoring.
+  // Tee shown in the scorecard's reference SI/metres/par columns. Each player's
+  // own tee (see teeOf/siOf/parsOf below) is what actually drives their scoring.
   const [tee, setTee] = useState<TeeKey>("mens");
   const activeTee = getTee(course, tee);
   const SI = activeTee.strokeIndex;
   const DIST = activeTee.distances;
+  // Par for the reference tee selected above. Holes can play a different par off
+  // each tee, so the reference Par column follows the same toggle as SI/metres.
+  const refPars = parsFor(course, tee);
   const totalDistance = DIST.reduce((a, b) => a + b, 0);
 
 
@@ -97,6 +99,9 @@ function RoundPage() {
 
   const siOf = (playerId: number) => getTee(course, teeOf(playerId)).strokeIndex;
 
+  // The 18-hole par array for a player's own tee, used for that player's scoring.
+  const parsOf = (playerId: number) => parsFor(course, teeOf(playerId));
+
   const playerTotal = (playerId: number) => {
     let total = 0;
     for (let h = 1; h <= 18; h++) {
@@ -110,7 +115,7 @@ function RoundPage() {
     let diff = 0;
     for (let h = 1; h <= 18; h++) {
       const s = getScore(playerId, h);
-      if (s !== undefined) diff += s - PARS[h - 1];
+      if (s !== undefined) diff += s - parsOf(playerId)[h - 1];
     }
     return diff;
   };
@@ -119,7 +124,7 @@ function RoundPage() {
   const holePoints = (playerId: number, hole: number) => {
     const s = getScore(playerId, hole);
     if (s === undefined) return undefined;
-    return stablefordPoints(s, PARS[hole - 1], handicapOf(playerId), siOf(playerId)[hole - 1]);
+    return stablefordPoints(s, parsOf(playerId)[hole - 1], handicapOf(playerId), siOf(playerId)[hole - 1]);
   };
 
   // Total Stableford points across the holes a player has scored.
@@ -232,7 +237,7 @@ function RoundPage() {
         </thead>
         <tbody>
           {holes.map((hole) => {
-            const par = PARS[hole - 1];
+            const par = refPars[hole - 1];
             const isActive = activeHole === hole;
             return (
               <tr
@@ -267,7 +272,7 @@ function RoundPage() {
                     <td key={p.id} className="py-2.5 px-2 text-center">
                       <span
                         className={`inline-block w-9 h-9 leading-9 rounded-full text-sm font-semibold ${
-                          s !== undefined ? scoreBg(s, par) : "text-white/30"
+                          s !== undefined ? scoreBg(s, parsOf(p.id)[hole - 1]) : "text-white/30"
                         }`}
                       >
                         {s !== undefined ? s : "—"}
@@ -284,7 +289,7 @@ function RoundPage() {
               {holes[0] === 1 ? "OUT" : "IN"}
             </td>
             <td className="py-2 px-2 text-center text-green-300 font-semibold">
-              {holes.reduce((s, h) => s + PARS[h - 1], 0)}
+              {holes.reduce((s, h) => s + refPars[h - 1], 0)}
             </td>
             <td className="py-2 px-2"></td>
             <td className="py-2 px-2 text-center text-green-300/70 text-xs tabular-nums">
@@ -311,17 +316,20 @@ function RoundPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-950 via-green-900 to-emerald-900">
+    <div className="min-h-screen app-bg-green">
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Link to="/" className="text-green-400 hover:text-white transition-colors text-sm">
             ← Rounds
           </Link>
+          <Link to="/rules" className="text-green-400 hover:text-white transition-colors text-sm">
+            Rules
+          </Link>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-white">{round.name}</h1>
             <p className="text-green-400 text-sm">
-              {course.name} · {round.scoringType === "casual" ? "Casual" : "Stableford"} · Par {PARS.reduce((a, b) => a + b, 0)} ·{" "}
+              {course.name} · {round.scoringType === "casual" ? "Casual" : "Stableford"} · Par {refPars.reduce((a, b) => a + b, 0)} ·{" "}
               {new Date(round.createdAt).toLocaleDateString("en-US", {
                 weekday: "long", month: "long", day: "numeric", year: "numeric",
               })}
@@ -496,7 +504,7 @@ function RoundPage() {
               <div>
                 <h3 className="text-white font-bold text-lg">Hole {activeHole}</h3>
                 <p className="text-green-300 text-sm">
-                  Par {PARS[activeHole - 1]} · {DIST[activeHole - 1]} m · SI {SI[activeHole - 1]}
+                  Par {refPars[activeHole - 1]} · {DIST[activeHole - 1]} m · SI {SI[activeHole - 1]}
                 </p>
               </div>
               <button
@@ -509,7 +517,7 @@ function RoundPage() {
             <div className="space-y-3 mb-5">
               {players.map((p) => {
                 const strokes = holeInputs[p.id] ? parseInt(holeInputs[p.id], 10) : undefined;
-                const par = PARS[activeHole - 1];
+                const par = parsOf(p.id)[activeHole - 1];
                 const label = strokes ? scoreLabel(strokes, par) : null;
                 const recv = strokesReceived(handicapOf(p.id), siOf(p.id)[activeHole - 1]);
                 const pts =
@@ -639,7 +647,7 @@ function RoundPage() {
                 <tr className="bg-white/10">
                   <td className="py-3 px-2 font-bold text-green-300 uppercase text-xs tracking-wide w-10">Total</td>
                   <td className="py-3 px-2 text-center text-green-300 font-bold w-8">
-                    {PARS.reduce((a, b) => a + b, 0)}
+                    {refPars.reduce((a, b) => a + b, 0)}
                   </td>
                   <td className="py-3 px-2 w-8"></td>
                   <td className="py-3 px-2 text-center text-green-300/70 text-xs tabular-nums w-12">

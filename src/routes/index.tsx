@@ -55,13 +55,29 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-950 via-green-900 to-emerald-900">
+    <div className="min-h-screen app-bg-green">
       <div className="max-w-2xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-10">
           <div className="text-6xl mb-3">⛳</div>
           <h1 className="text-4xl font-bold text-white tracking-tight">Golf Scorecard</h1>
           <p className="text-green-300 mt-2">Track your round, hole by hole</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex rounded-2xl overflow-hidden border border-white/20 mb-8">
+          <Link
+            to="/"
+            className="flex-1 text-center py-3 font-semibold bg-green-500 text-white transition-colors"
+          >
+            Scorecard
+          </Link>
+          <Link
+            to="/rules"
+            className="flex-1 text-center py-3 font-semibold bg-white/5 text-green-200 hover:bg-white/10 transition-colors"
+          >
+            Rules
+          </Link>
         </div>
 
         {/* New Round Button */}

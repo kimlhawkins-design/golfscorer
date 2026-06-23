@@ -13,3 +13,9 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+/* Full-page green background shared across all routes. The deep green stops
+   keep the white scorecard text and cards readable on top. */
+.app-bg-green {
+  background-image: linear-gradient(135deg, #14532d 0%, #166534 50%, #15803d 100%);
+}
