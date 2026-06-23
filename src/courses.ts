@@ -1,15 +1,20 @@
 // Golf course definitions. Each course has a stable `key` (stored on the round
-// in the database), an 18-hole `pars` array (par is the same off either tee),
-// and two tee sets — `mens` and `womens`. Each tee carries its own 18-hole
-// `strokeIndex` and `distances` (metres). The stroke index ranks holes 1–18 by
-// difficulty (1 = hardest) and determines the order in which a player's handicap
-// strokes are allocated for Stableford and net scoring; men's and women's cards
-// often rank the holes differently, so each tee keeps its own.
+// in the database), an 18-hole `pars` array (the base par, used off either tee
+// unless a tee overrides it), and two tee sets — `mens` and `womens`. Each tee
+// carries its own 18-hole `strokeIndex` and `distances` (metres), and may carry
+// its own `pars` where a hole plays a different par off each tee. The stroke
+// index ranks holes 1–18 by difficulty (1 = hardest) and determines the order in
+// which a player's handicap strokes are allocated for Stableford and net scoring;
+// men's and women's cards often rank the holes differently, so each tee keeps its own.
 export type Tee = {
   // Holes 1–18 ranked by difficulty (1 = hardest).
   strokeIndex: number[];
   // Hole length in metres for this tee.
   distances: number[];
+  // Optional per-tee par override (holes 1–18). When omitted, the tee uses the
+  // course's `pars`. Used where a hole plays a different par off each tee — e.g.
+  // a long hole that is a par 5 for women but a par 4 for men.
+  pars?: number[];
 };
 
 export type TeeKey = "mens" | "womens";
@@ -26,14 +31,16 @@ export const COURSES: Course[] = [
   {
     key: "standard",
     name: "Wodonga",
-    pars: [4, 4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5],
+    // Base par, used off both tees — every hole now plays the same par for men
+    // and women, so the women's tee carries no par override.
+    pars: [4, 4, 4, 5, 4, 3, 5, 3, 4, 5, 3, 4, 4, 4, 4, 3, 4, 5],
     mens: {
-      strokeIndex: [3, 7, 17, 1, 5, 15, 9, 11, 13, 4, 18, 8, 2, 6, 10, 16, 12, 14],
-      distances: [360, 375, 165, 340, 480, 155, 385, 350, 470, 400, 170, 365, 490, 355, 345, 160, 370, 465],
+      strokeIndex: [3, 7, 13, 17, 5, 11, 15, 9, 1, 18, 12, 8, 2, 10, 6, 16, 14, 4],
+      distances: [385, 355, 347, 438, 393, 195, 472, 159, 286, 443, 172, 327, 394, 346, 360, 152, 342, 535],
     },
     womens: {
-      strokeIndex: [5, 3, 17, 7, 1, 15, 9, 13, 11, 4, 18, 6, 2, 8, 10, 16, 14, 12],
-      distances: [315, 330, 130, 300, 425, 120, 335, 305, 410, 350, 135, 320, 430, 310, 300, 125, 325, 405],
+      strokeIndex: [3, 7, 13, 17, 5, 11, 15, 9, 1, 18, 12, 8, 2, 10, 6, 16, 14, 4],
+      distances: [326, 297, 298, 430, 305, 165, 410, 151, 281, 397, 160, 308, 327, 261, 300, 105, 299, 455],
     },
   },
   {
@@ -89,6 +96,12 @@ export function getCourse(key: string | null | undefined): Course {
 // Resolve the tee set (men's or women's) for a course.
 export function getTee(course: Course, tee: TeeKey): Tee {
   return tee === "womens" ? course.womens : course.mens;
+}
+
+// Resolve the 18-hole par array for a tee, falling back to the course's base
+// par where the tee has no override.
+export function parsFor(course: Course, tee: TeeKey): number[] {
+  return getTee(course, tee).pars ?? course.pars;
 }
 
 // Number of handicap strokes a player receives on a hole, given their course
