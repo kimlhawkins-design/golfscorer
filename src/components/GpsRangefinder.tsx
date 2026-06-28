@@ -32,8 +32,6 @@ function distanceMeters(
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-const metersToYards = (m: number) => m * 1.09361;
-
 function DistanceReadout({
   label,
   target,
@@ -43,25 +41,22 @@ function DistanceReadout({
   target: { lat: number; lng: number } | null;
   position: Position | null;
 }) {
-  const meters =
+  const metres =
     target && position ? distanceMeters(position, target) : null;
   return (
     <div className="flex-1 bg-white/5 rounded-2xl p-4 text-center">
       <div className="text-green-300 text-xs font-semibold uppercase tracking-wider mb-1">
         {label}
       </div>
-      {meters === null ? (
+      {metres === null ? (
         <div className="text-white/30 text-sm py-2">
           {target ? "Waiting for GPS…" : "Not marked"}
         </div>
       ) : (
         <div>
           <div className="text-white font-bold text-4xl tabular-nums leading-none">
-            {Math.round(metersToYards(meters))}
-            <span className="text-base font-semibold text-green-300 ml-1">yd</span>
-          </div>
-          <div className="text-white/50 text-sm mt-1 tabular-nums">
-            {Math.round(meters)} m
+            {Math.round(metres)}
+            <span className="text-base font-semibold text-green-300 ml-1">m</span>
           </div>
         </div>
       )}
