@@ -225,29 +225,13 @@ export function FairwayMap({
   return (
     <section className="overflow-hidden rounded-2xl border border-white/20 bg-slate-950/45 shadow-2xl shadow-black/20 mb-6">
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 bg-white/5">
-        <button
-          type="button"
-          aria-label="Previous hole"
-          onClick={onPrevious}
-          disabled={!canPrevious}
-          className="w-10 h-10 rounded-xl bg-white/10 text-white text-xl font-bold hover:bg-white/20 disabled:opacity-30 transition-colors"
-        >
-          -
-        </button>
-        <div className="text-center min-w-0">
-          <div className="text-green-300 text-xs font-semibold uppercase tracking-wider">Hole {hole}</div>
-          <div className="text-white font-bold text-lg leading-tight">Par {par} · {metres} m · SI {strokeIndex}</div>
-          <div className="text-white/45 text-xs">{teeLabel} · {hasGpsLayout ? "GPS measured layout" : "Illustrated guide"}</div>
+        <div>
+          <div className="text-green-300 text-xs font-semibold uppercase tracking-wider">Course view</div>
+          <div className="text-white font-bold">Hole {hole} fairway</div>
         </div>
-        <button
-          type="button"
-          aria-label="Next hole"
-          onClick={onNext}
-          disabled={!canNext}
-          className="w-10 h-10 rounded-xl bg-white/10 text-white text-xl font-bold hover:bg-white/20 disabled:opacity-30 transition-colors"
-        >
-          +
-        </button>
+        <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">
+          {hasGpsLayout ? "GPS layout" : "Illustrated"}
+        </div>
       </div>
 
       {teeLocation && greenLocation ? (
