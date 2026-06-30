@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getRound, upsertScore, updatePlayerHandicap, updatePlayerTee } from "../server/golf.functions";
+import { deleteScore, getRound, upsertScore, updatePlayerHandicap, updatePlayerTee } from "../server/golf.functions";
 import { getCourse, getTee, parsFor, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
 import { GpsRangefinder } from "../components/GpsRangefinder";
+import { FairwayMap } from "../components/FairwayMap";
 
 export const Route = createFileRoute("/rounds/$roundId")({
   loader: async ({ params }) => {
@@ -49,6 +50,7 @@ function RoundPage() {
   const { round, players, scores, holeLocations } = Route.useLoaderData();
   const router = useRouter();
   const upsertFn = useServerFn(upsertScore);
+  const deleteScoreFn = useServerFn(deleteScore);
   const updateHandicapFn = useServerFn(updatePlayerHandicap);
   const updateTeeFn = useServerFn(updatePlayerTee);
 
@@ -70,6 +72,7 @@ function RoundPage() {
     round.scoringType === "casual" ? "stroke" : "stableford",
   );
   const [activeHole, setActiveHole] = useState<number | null>(null);
+  const [selectedHole, setSelectedHole] = useState(1);
   const [gpsHole, setGpsHole] = useState(1);
   const [holeInputs, setHoleInputs] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
@@ -153,7 +156,15 @@ function RoundPage() {
     }
     setHoleInputs(inputs);
     setActiveHole(hole);
+    setSelectedHole(hole);
     setGpsHole(hole);
+  };
+
+  const setPlayerHoleScore = (playerId: number, next: number | "") => {
+    setHoleInputs((current) => ({
+      ...current,
+      [playerId]: next === "" ? "" : String(Math.max(1, Math.min(20, next))),
+    }));
   };
 
   const saveHole = async () => {
@@ -162,18 +173,25 @@ function RoundPage() {
     try {
       for (const p of players) {
         const val = holeInputs[p.id];
-        if (val !== "" && val !== undefined) {
-          const strokes = parseInt(val, 10);
-          if (!isNaN(strokes) && strokes > 0) {
-            await upsertFn({
-              data: {
-                roundId: round.id,
-                playerId: p.id,
-                holeNumber: activeHole,
-                strokes,
-              },
+        const existing = getScore(p.id, activeHole);
+        if (val === "" || val === undefined) {
+          if (existing !== undefined) {
+            await deleteScoreFn({
+              data: { roundId: round.id, playerId: p.id, holeNumber: activeHole },
             });
           }
+          continue;
+        }
+        const strokes = parseInt(val, 10);
+        if (!Number.isNaN(strokes) && strokes > 0) {
+          await upsertFn({
+            data: {
+              roundId: round.id,
+              playerId: p.id,
+              holeNumber: activeHole,
+              strokes,
+            },
+          });
         }
       }
       setActiveHole(null);
@@ -218,6 +236,24 @@ function RoundPage() {
 
   const frontNine = Array.from({ length: 9 }, (_, i) => i + 1);
   const backNine = Array.from({ length: 9 }, (_, i) => i + 10);
+  const selectedPar = refPars[selectedHole - 1];
+  const selectedDistance = DIST[selectedHole - 1];
+  const selectedStrokeIndex = SI[selectedHole - 1];
+  const selectedLocation = holeLocations.find((l) => l.holeNumber === selectedHole);
+  const selectedTeeLocation =
+    selectedLocation && selectedLocation.teeLat !== null && selectedLocation.teeLng !== null
+      ? { lat: selectedLocation.teeLat, lng: selectedLocation.teeLng }
+      : null;
+  const selectedGreenLocation =
+    selectedLocation && selectedLocation.greenLat !== null && selectedLocation.greenLng !== null
+      ? { lat: selectedLocation.greenLat, lng: selectedLocation.greenLng }
+      : null;
+
+  const goToHole = (hole: number) => {
+    const nextHole = Math.max(1, Math.min(18, hole));
+    setSelectedHole(nextHole);
+    setGpsHole(nextHole);
+  };
 
   const renderScorecard = (holes: number[]) => (
     <div className="overflow-x-auto">
@@ -489,11 +525,26 @@ function RoundPage() {
           </div>
         </div>
 
+        {/* Fairway Map */}
+        <FairwayMap
+          hole={selectedHole}
+          par={selectedPar}
+          metres={selectedDistance}
+          strokeIndex={selectedStrokeIndex}
+          tee={tee}
+          teeLocation={selectedTeeLocation}
+          greenLocation={selectedGreenLocation}
+          onPrevious={() => goToHole(selectedHole - 1)}
+          onNext={() => goToHole(selectedHole + 1)}
+          canPrevious={selectedHole > 1}
+          canNext={selectedHole < 18}
+        />
+
         {/* GPS Rangefinder */}
         <GpsRangefinder
           course={round.course}
           hole={gpsHole}
-          onHoleChange={setGpsHole}
+          onHoleChange={(hole) => goToHole(hole)}
           locations={holeLocations}
         />
 
@@ -551,8 +602,8 @@ function RoundPage() {
                         type="button"
                         aria-label={`Decrease ${p.name}'s score`}
                         onClick={() => {
-                          const cur = parseInt(holeInputs[p.id] || "0", 10);
-                          if (cur > 1) setHoleInputs({ ...holeInputs, [p.id]: String(cur - 1) });
+                          const cur = parseInt(holeInputs[p.id] || "", 10);
+                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? Math.max(1, par - 1) : cur - 1);
                         }}
                         className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
                       >
@@ -565,8 +616,8 @@ function RoundPage() {
                         type="button"
                         aria-label={`Increase ${p.name}'s score`}
                         onClick={() => {
-                          const cur = parseInt(holeInputs[p.id] || "0", 10);
-                          setHoleInputs({ ...holeInputs, [p.id]: String(cur + 1) });
+                          const cur = parseInt(holeInputs[p.id] || "", 10);
+                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? par : cur + 1);
                         }}
                         className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
                       >
@@ -588,8 +639,9 @@ function RoundPage() {
               {activeHole < 18 && (
                 <button
                   onClick={async () => {
+                    const nextHole = activeHole + 1;
                     await saveHole();
-                    openHole(activeHole + 1);
+                    openHole(nextHole);
                   }}
                   disabled={saving}
                   className="flex-1 bg-white/15 hover:bg-white/25 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
