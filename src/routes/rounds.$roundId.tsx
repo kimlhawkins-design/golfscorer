@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { ChevronLeft, ChevronRight, Flag, MapPin, PencilLine } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteScore, getRound, upsertScore, updatePlayerHandicap, updatePlayerTee } from "../server/golf.functions";
 import { getCourse, getTee, parsFor, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
@@ -44,6 +45,101 @@ function pointsBg(points: number | undefined) {
   if (points === 2) return "text-white";
   if (points === 1) return "bg-orange-500/20 text-orange-200";
   return "bg-red-700/40 text-red-200";
+}
+
+
+function CurrentHoleControl({
+  hole,
+  par,
+  metres,
+  strokeIndex,
+  tee,
+  layoutStatus,
+  onPrevious,
+  onNext,
+  onScore,
+  onGps,
+}: {
+  hole: number;
+  par: number;
+  metres: number;
+  strokeIndex: number;
+  tee: TeeKey;
+  layoutStatus: "illustrated" | "gps";
+  onPrevious: () => void;
+  onNext: () => void;
+  onScore: () => void;
+  onGps: () => void;
+}) {
+  return (
+    <section className="mb-4 overflow-hidden rounded-2xl border border-white/15 bg-slate-950/40 shadow-2xl shadow-black/20">
+      <div className="grid grid-cols-[48px_1fr_48px] items-stretch">
+        <button
+          type="button"
+          aria-label="Previous hole"
+          onClick={onPrevious}
+          disabled={hole <= 1}
+          className="flex items-center justify-center border-r border-white/10 bg-white/5 text-white hover:bg-white/10 disabled:opacity-30 transition-colors"
+        >
+          <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+        </button>
+
+        <div className="px-4 py-4 text-center">
+          <div className="mb-2 flex items-center justify-center gap-2 text-green-300 text-xs font-semibold uppercase tracking-wider">
+            <Flag className="h-4 w-4" aria-hidden="true" />
+            Current hole
+          </div>
+          <div className="text-white font-black text-5xl leading-none tabular-nums">{hole}</div>
+          <div className="mt-3 grid grid-cols-3 divide-x divide-white/10 rounded-xl bg-white/8 border border-white/10">
+            <div className="px-2 py-2">
+              <div className="text-white/45 text-[10px] uppercase tracking-wider">Par</div>
+              <div className="text-white font-bold tabular-nums">{par}</div>
+            </div>
+            <div className="px-2 py-2">
+              <div className="text-white/45 text-[10px] uppercase tracking-wider">Metres</div>
+              <div className="text-white font-bold tabular-nums">{metres}</div>
+            </div>
+            <div className="px-2 py-2">
+              <div className="text-white/45 text-[10px] uppercase tracking-wider">SI</div>
+              <div className="text-white font-bold tabular-nums">{strokeIndex}</div>
+            </div>
+          </div>
+          <div className="mt-2 text-white/45 text-xs">
+            {tee === "womens" ? "Women's card" : "Men's card"} · {layoutStatus === "gps" ? "GPS measured layout" : "Illustrated guide"}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          aria-label="Next hole"
+          onClick={onNext}
+          disabled={hole >= 18}
+          className="flex items-center justify-center border-l border-white/10 bg-white/5 text-white hover:bg-white/10 disabled:opacity-30 transition-colors"
+        >
+          <ChevronRight className="h-6 w-6" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 border-t border-white/10 bg-black/15 p-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={onScore}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-3 text-white font-bold shadow-lg shadow-green-950/20 transition-colors hover:bg-green-400"
+        >
+          <PencilLine className="h-5 w-5" aria-hidden="true" />
+          Enter scores
+        </button>
+        <button
+          type="button"
+          onClick={onGps}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white font-bold transition-colors hover:bg-white/20"
+        >
+          <MapPin className="h-5 w-5" aria-hidden="true" />
+          Use GPS
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function RoundPage() {
@@ -370,8 +466,144 @@ function RoundPage() {
                 weekday: "long", month: "long", day: "numeric", year: "numeric",
               })}
             </p>
+            <p className="text-white/45 text-xs mt-1">Open a hole from the card below or use the fairway arrows to plan the next shot.</p>
           </div>
         </div>
+
+        {/* Current Hole */}
+        <CurrentHoleControl
+          hole={selectedHole}
+          par={selectedPar}
+          metres={selectedDistance}
+          strokeIndex={selectedStrokeIndex}
+          tee={tee}
+          layoutStatus={selectedTeeLocation && selectedGreenLocation ? "gps" : "illustrated"}
+          onPrevious={() => goToHole(selectedHole - 1)}
+          onNext={() => goToHole(selectedHole + 1)}
+          onScore={() => openHole(selectedHole)}
+          onGps={() => setGpsHole(selectedHole)}
+        />
+
+        {/* Fairway Map */}
+        <FairwayMap
+          hole={selectedHole}
+          par={selectedPar}
+          metres={selectedDistance}
+          strokeIndex={selectedStrokeIndex}
+          tee={tee}
+          teeLocation={selectedTeeLocation}
+          greenLocation={selectedGreenLocation}
+          onPrevious={() => goToHole(selectedHole - 1)}
+          onNext={() => goToHole(selectedHole + 1)}
+          canPrevious={selectedHole > 1}
+          canNext={selectedHole < 18}
+        />
+
+        {/* Score Entry Panel */}
+        {activeHole !== null && (
+          <div className="bg-emerald-800/80 backdrop-blur border border-green-500/50 rounded-2xl p-5 mb-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-white font-bold text-lg">Hole {activeHole}</h3>
+                <p className="text-green-300 text-sm">
+                  Par {refPars[activeHole - 1]} · {DIST[activeHole - 1]} m · SI {SI[activeHole - 1]}
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveHole(null)}
+                className="text-white/50 hover:text-white text-xl transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3 mb-5">
+              {players.map((p) => {
+                const strokes = holeInputs[p.id] ? parseInt(holeInputs[p.id], 10) : undefined;
+                const par = parsOf(p.id)[activeHole - 1];
+                const label = strokes ? scoreLabel(strokes, par) : null;
+                const recv = strokesReceived(handicapOf(p.id), siOf(p.id)[activeHole - 1]);
+                const pts =
+                  strokes !== undefined
+                    ? stablefordPoints(strokes, par, handicapOf(p.id), siOf(p.id)[activeHole - 1])
+                    : undefined;
+                return (
+                  <div key={p.id} className="flex items-center justify-between gap-3 bg-white/5 rounded-2xl p-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-white font-semibold truncate">{p.name}</span>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {label && (
+                          <span className={`self-start text-xs font-bold px-2 py-0.5 rounded-full ${label.color}`}>
+                            {label.label}
+                          </span>
+                        )}
+                        {pts !== undefined && (
+                          <span className="self-start text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-100">
+                            {pts} pt{pts === 1 ? "" : "s"}
+                          </span>
+                        )}
+                        {recv > 0 && (
+                          <span className="self-start text-[10px] text-green-300/70">
+                            +{recv} stroke{recv === 1 ? "" : "s"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        type="button"
+                        aria-label={`Decrease ${p.name}'s score`}
+                        onClick={() => {
+                          const cur = parseInt(holeInputs[p.id] || "", 10);
+                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? Math.max(1, par - 1) : cur - 1);
+                        }}
+                        className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
+                      >
+                        −
+                      </button>
+                      <span className="w-12 text-center text-white font-bold text-3xl tabular-nums">
+                        {strokes ?? "—"}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Increase ${p.name}'s score`}
+                        onClick={() => {
+                          const cur = parseInt(holeInputs[p.id] || "", 10);
+                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? par : cur + 1);
+                        }}
+                        className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={saveHole}
+                disabled={saving}
+                className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
+              >
+                {saving ? "Saving…" : "Save Hole"}
+              </button>
+              {activeHole < 18 && (
+                <button
+                  onClick={async () => {
+                    const nextHole = activeHole + 1;
+                    await saveHole();
+                    openHole(nextHole);
+                  }}
+                  disabled={saving}
+                  className="flex-1 bg-white/15 hover:bg-white/25 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
+                >
+                  Save & Next →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
 
         {/* Leaderboard */}
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-4 mb-6">
@@ -525,21 +757,6 @@ function RoundPage() {
           </div>
         </div>
 
-        {/* Fairway Map */}
-        <FairwayMap
-          hole={selectedHole}
-          par={selectedPar}
-          metres={selectedDistance}
-          strokeIndex={selectedStrokeIndex}
-          tee={tee}
-          teeLocation={selectedTeeLocation}
-          greenLocation={selectedGreenLocation}
-          onPrevious={() => goToHole(selectedHole - 1)}
-          onNext={() => goToHole(selectedHole + 1)}
-          canPrevious={selectedHole > 1}
-          canNext={selectedHole < 18}
-        />
-
         {/* GPS Rangefinder */}
         <GpsRangefinder
           course={round.course}
@@ -547,111 +764,6 @@ function RoundPage() {
           onHoleChange={(hole) => goToHole(hole)}
           locations={holeLocations}
         />
-
-        {/* Score Entry Panel */}
-        {activeHole !== null && (
-          <div className="bg-emerald-800/80 backdrop-blur border border-green-500/50 rounded-2xl p-5 mb-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-white font-bold text-lg">Hole {activeHole}</h3>
-                <p className="text-green-300 text-sm">
-                  Par {refPars[activeHole - 1]} · {DIST[activeHole - 1]} m · SI {SI[activeHole - 1]}
-                </p>
-              </div>
-              <button
-                onClick={() => setActiveHole(null)}
-                className="text-white/50 hover:text-white text-xl transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-3 mb-5">
-              {players.map((p) => {
-                const strokes = holeInputs[p.id] ? parseInt(holeInputs[p.id], 10) : undefined;
-                const par = parsOf(p.id)[activeHole - 1];
-                const label = strokes ? scoreLabel(strokes, par) : null;
-                const recv = strokesReceived(handicapOf(p.id), siOf(p.id)[activeHole - 1]);
-                const pts =
-                  strokes !== undefined
-                    ? stablefordPoints(strokes, par, handicapOf(p.id), siOf(p.id)[activeHole - 1])
-                    : undefined;
-                return (
-                  <div key={p.id} className="flex items-center justify-between gap-3 bg-white/5 rounded-2xl p-3">
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-white font-semibold truncate">{p.name}</span>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {label && (
-                          <span className={`self-start text-xs font-bold px-2 py-0.5 rounded-full ${label.color}`}>
-                            {label.label}
-                          </span>
-                        )}
-                        {pts !== undefined && (
-                          <span className="self-start text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-100">
-                            {pts} pt{pts === 1 ? "" : "s"}
-                          </span>
-                        )}
-                        {recv > 0 && (
-                          <span className="self-start text-[10px] text-green-300/70">
-                            +{recv} stroke{recv === 1 ? "" : "s"}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <button
-                        type="button"
-                        aria-label={`Decrease ${p.name}'s score`}
-                        onClick={() => {
-                          const cur = parseInt(holeInputs[p.id] || "", 10);
-                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? Math.max(1, par - 1) : cur - 1);
-                        }}
-                        className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
-                      >
-                        −
-                      </button>
-                      <span className="w-12 text-center text-white font-bold text-3xl tabular-nums">
-                        {strokes ?? "—"}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label={`Increase ${p.name}'s score`}
-                        onClick={() => {
-                          const cur = parseInt(holeInputs[p.id] || "", 10);
-                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? par : cur + 1);
-                        }}
-                        className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={saveHole}
-                disabled={saving}
-                className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
-              >
-                {saving ? "Saving…" : "Save Hole"}
-              </button>
-              {activeHole < 18 && (
-                <button
-                  onClick={async () => {
-                    const nextHole = activeHole + 1;
-                    await saveHole();
-                    openHole(nextHole);
-                  }}
-                  disabled={saving}
-                  className="flex-1 bg-white/15 hover:bg-white/25 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
-                >
-                  Save & Next →
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Scorecard */}
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl overflow-hidden mb-6">
