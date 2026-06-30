@@ -1,7 +1,22 @@
 [build]
-  command = "vite build"
+  command = "npm run build"
   publish = "dist/client"
+
+[build.environment]
+  NODE_VERSION = "22"
+
 [dev]
   command = "npm run dev"
   targetPort = 3000
   port = 8888
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
