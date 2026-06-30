@@ -46,3 +46,20 @@ For local Netlify Database emulation, use:
 ```bash
 netlify dev
 ```
+
+
+## Real Hole Maps
+
+The round page can show true satellite-style hole maps when both conditions are met:
+
+1. A hole has tee and green GPS locations saved with the in-app GPS rangefinder.
+2. Netlify has a `VITE_MAPBOX_TOKEN` environment variable set.
+
+Without a Mapbox token, or before a hole is marked, the app falls back to the illustrated fairway guide.
+
+To enable satellite maps in Netlify:
+
+1. Open the `golfscorer` project in Netlify.
+2. Go to Site configuration -> Environment variables.
+3. Add `VITE_MAPBOX_TOKEN` with your Mapbox public access token.
+4. Redeploy the site.

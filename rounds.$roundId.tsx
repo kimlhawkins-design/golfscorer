@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { deleteScore, getRound, upsertScore, updatePlayerHandicap, updatePlayerTee } from "../server/golf.functions";
 import { getCourse, getTee, parsFor, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
 import { GpsRangefinder } from "../components/GpsRangefinder";
+import { FairwayMap } from "../components/FairwayMap";
 
 export const Route = createFileRoute("/rounds/$roundId")({
   loader: async ({ params }) => {
@@ -71,6 +72,7 @@ function RoundPage() {
     round.scoringType === "casual" ? "stroke" : "stableford",
   );
   const [activeHole, setActiveHole] = useState<number | null>(null);
+  const [selectedHole, setSelectedHole] = useState(1);
   const [gpsHole, setGpsHole] = useState(1);
   const [holeInputs, setHoleInputs] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
@@ -154,6 +156,7 @@ function RoundPage() {
     }
     setHoleInputs(inputs);
     setActiveHole(hole);
+    setSelectedHole(hole);
     setGpsHole(hole);
   };
 
@@ -233,6 +236,24 @@ function RoundPage() {
 
   const frontNine = Array.from({ length: 9 }, (_, i) => i + 1);
   const backNine = Array.from({ length: 9 }, (_, i) => i + 10);
+  const selectedPar = refPars[selectedHole - 1];
+  const selectedDistance = DIST[selectedHole - 1];
+  const selectedStrokeIndex = SI[selectedHole - 1];
+  const selectedLocation = holeLocations.find((l) => l.holeNumber === selectedHole);
+  const selectedTeeLocation =
+    selectedLocation && selectedLocation.teeLat !== null && selectedLocation.teeLng !== null
+      ? { lat: selectedLocation.teeLat, lng: selectedLocation.teeLng }
+      : null;
+  const selectedGreenLocation =
+    selectedLocation && selectedLocation.greenLat !== null && selectedLocation.greenLng !== null
+      ? { lat: selectedLocation.greenLat, lng: selectedLocation.greenLng }
+      : null;
+
+  const goToHole = (hole: number) => {
+    const nextHole = Math.max(1, Math.min(18, hole));
+    setSelectedHole(nextHole);
+    setGpsHole(nextHole);
+  };
 
   const renderScorecard = (holes: number[]) => (
     <div className="overflow-x-auto">
@@ -504,11 +525,26 @@ function RoundPage() {
           </div>
         </div>
 
+        {/* Fairway Map */}
+        <FairwayMap
+          hole={selectedHole}
+          par={selectedPar}
+          metres={selectedDistance}
+          strokeIndex={selectedStrokeIndex}
+          tee={tee}
+          teeLocation={selectedTeeLocation}
+          greenLocation={selectedGreenLocation}
+          onPrevious={() => goToHole(selectedHole - 1)}
+          onNext={() => goToHole(selectedHole + 1)}
+          canPrevious={selectedHole > 1}
+          canNext={selectedHole < 18}
+        />
+
         {/* GPS Rangefinder */}
         <GpsRangefinder
           course={round.course}
           hole={gpsHole}
-          onHoleChange={setGpsHole}
+          onHoleChange={(hole) => goToHole(hole)}
           locations={holeLocations}
         />
 
@@ -603,8 +639,9 @@ function RoundPage() {
               {activeHole < 18 && (
                 <button
                   onClick={async () => {
+                    const nextHole = activeHole + 1;
                     await saveHole();
-                    openHole(activeHole + 1);
+                    openHole(nextHole);
                   }}
                   disabled={saving}
                   className="flex-1 bg-white/15 hover:bg-white/25 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
