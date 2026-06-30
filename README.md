@@ -48,18 +48,8 @@ netlify dev
 ```
 
 
-## Real Hole Maps
+## Real Hole Layouts
 
-The round page can show true satellite-style hole maps when both conditions are met:
+The round page shows professional illustrated fairways by default. No map account, token, or billing details are needed.
 
-1. A hole has tee and green GPS locations saved with the in-app GPS rangefinder.
-2. Netlify has a `VITE_MAPBOX_TOKEN` environment variable set.
-
-Without a Mapbox token, or before a hole is marked, the app falls back to the illustrated fairway guide.
-
-To enable satellite maps in Netlify:
-
-1. Open the `golfscorer` project in Netlify.
-2. Go to Site configuration -> Environment variables.
-3. Add `VITE_MAPBOX_TOKEN` with your Mapbox public access token.
-4. Redeploy the site.
+When you use the in-app GPS rangefinder to mark a hole's tee and green, the fairway card upgrades to a GPS-measured hole diagram with marked tee/green status, measured tee-to-green distance, and bearing.

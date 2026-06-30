@@ -48,56 +48,112 @@ function fairwayPath(hole: number) {
   };
 }
 
-function mapboxSatelliteUrl(teeLocation?: LatLng | null, greenLocation?: LatLng | null) {
-  const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
-  if (!token || !teeLocation || !greenLocation) return null;
-
-  const pins = [
-    "pin-s-t+14532d(" + teeLocation.lng + "," + teeLocation.lat + ")",
-    "pin-s-g+ef4444(" + greenLocation.lng + "," + greenLocation.lat + ")",
-  ].join(",");
-
-  return "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/" +
-    pins + "/auto/720x720@2x?padding=70,70,70,70&access_token=" + encodeURIComponent(token);
+function distanceMeters(a: LatLng, b: LatLng) {
+  const radius = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * radius * Math.asin(Math.sqrt(h));
 }
 
-function SatelliteHoleMap({
+function bearingDegrees(a: LatLng, b: LatLng) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const toDeg = (r: number) => (r * 180) / Math.PI;
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function compassLabel(degrees: number) {
+  const labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return labels[Math.round(degrees / 45) % labels.length];
+}
+
+function GpsHoleDiagram({
   hole,
   teeLocation,
   greenLocation,
-  mapUrl,
 }: {
   hole: number;
   teeLocation: LatLng;
   greenLocation: LatLng;
-  mapUrl: string;
 }) {
-  return (
-    <div className="relative h-[360px] overflow-hidden bg-slate-900">
-      <img
-        src={mapUrl}
-        alt={"Satellite hole map for hole " + hole}
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
+  const measured = Math.round(distanceMeters(teeLocation, greenLocation));
+  const bearing = Math.round(bearingDegrees(teeLocation, greenLocation));
+  const compass = compassLabel(bearing);
+  const shape = holeShapes[(hole - 1) % holeShapes.length];
+  const greenX = 50 + Math.max(-18, Math.min(18, shape.bend * 0.6));
+  const leftMid = 50 - shape.width / 2 + shape.bend * 0.55;
+  const rightMid = 50 + shape.width / 2 + shape.bend * 0.55;
+  const path = [
+    "M 39 94",
+    "C " + (leftMid - 7) + " 76, " + (leftMid - 6) + " 58, " + (greenX - 16) + " 33",
+    "C " + (greenX - 9) + " 24, " + (greenX + 9) + " 24, " + (greenX + 16) + " 33",
+    "C " + (rightMid + 7) + " 58, " + (rightMid + 6) + " 76, 61 94",
+    "C 54 98, 46 98, 39 94",
+    "Z",
+  ].join(" ");
 
-      <div className="absolute left-4 top-4 rounded-xl bg-black/35 px-3 py-2 backdrop-blur">
-        <div className="text-white/55 text-[10px] uppercase tracking-wider">Real layout</div>
-        <div className="text-white text-sm font-semibold">Satellite hole map</div>
+  return (
+    <div className="relative h-[360px] bg-[radial-gradient(circle_at_50%_18%,rgba(134,239,172,0.24),transparent_30%),linear-gradient(180deg,#123b2e_0%,#165f39_52%,#09281f_100%)]">
+      <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" role="img" aria-label={"GPS measured hole diagram for hole " + hole} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={"gps-fairway-" + hole} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#a7f36f" />
+            <stop offset="55%" stopColor="#4fbc50" />
+            <stop offset="100%" stopColor="#2b8c3d" />
+          </linearGradient>
+          <filter id={"gps-shadow-" + hole} x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="2.5" floodColor="#03140e" floodOpacity="0.42" />
+          </filter>
+        </defs>
+
+        <path d={path} fill={"url(#gps-fairway-" + hole + ")"} filter={"url(#gps-shadow-" + hole + ")"} />
+        <path d={"M 50 92 C " + (50 + shape.bend * 0.6) + " 70, " + greenX + " 48, " + greenX + " 25"} fill="none" stroke="#ecfccb" strokeOpacity="0.55" strokeWidth="0.9" strokeDasharray="2 2.6" />
+
+        <ellipse cx={greenX} cy="21" rx="13" ry="7" fill="#93f36b" stroke="#ecfccb" strokeOpacity="0.75" strokeWidth="0.7" />
+        <circle cx={greenX + 3} cy="20" r="1.5" fill="#14532d" />
+        <path d={"M " + (greenX + 3) + " 20 L " + (greenX + 3) + " 10.5"} stroke="#f8fafc" strokeWidth="0.65" />
+        <path d={"M " + (greenX + 3) + " 10.5 L " + (greenX + 9) + " 12.8 L " + (greenX + 3) + " 15 Z"} fill="#ef4444" />
+
+        <ellipse cx={shape.bunkerA} cy="40" rx="6" ry="3.7" fill="#f6e7b4" opacity="0.95" />
+        <ellipse cx={shape.bunkerB} cy="57" rx="5.5" ry="3.2" fill="#f6e7b4" opacity="0.9" />
+        {shape.water && <path d="M 7 66 C 18 58, 27 61, 33 70 C 24 79, 12 78, 7 66 Z" fill="#38bdf8" opacity="0.8" />}
+
+        <ellipse cx="50" cy="94" rx="10" ry="4.5" fill="#b8a06a" />
+        <rect x="44" y="90" width="12" height="3" rx="1.5" fill="#e7d7a0" />
+      </svg>
+
+      <div className="absolute left-4 top-4 rounded-xl bg-black/30 px-3 py-2 backdrop-blur">
+        <div className="text-white/55 text-[10px] uppercase tracking-wider">GPS layout</div>
+        <div className="text-white text-sm font-semibold">Measured tee to green</div>
       </div>
 
-      <div className="absolute bottom-4 left-4 right-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-black/35 px-3 py-2 backdrop-blur">
-          <div className="text-white/55 text-[10px] uppercase tracking-wider">Tee</div>
-          <div className="text-white text-xs font-semibold tabular-nums">
-            {teeLocation.lat.toFixed(5)}, {teeLocation.lng.toFixed(5)}
-          </div>
+      <div className="absolute right-4 top-4 rounded-full bg-black/30 px-3 py-2 text-center backdrop-blur">
+        <div className="text-white/45 text-[10px] uppercase tracking-wider">Bearing</div>
+        <div className="text-white text-sm font-bold tabular-nums">{compass} {bearing}°</div>
+      </div>
+
+      <div className="absolute bottom-4 left-4 right-4 grid grid-cols-3 gap-2">
+        <div className="rounded-xl bg-black/30 px-3 py-2 text-center backdrop-blur">
+          <div className="text-white/45 text-[10px] uppercase tracking-wider">Measured</div>
+          <div className="text-white font-bold tabular-nums">{measured} m</div>
         </div>
-        <div className="rounded-xl bg-black/35 px-3 py-2 backdrop-blur">
-          <div className="text-white/55 text-[10px] uppercase tracking-wider">Green</div>
-          <div className="text-white text-xs font-semibold tabular-nums">
-            {greenLocation.lat.toFixed(5)}, {greenLocation.lng.toFixed(5)}
-          </div>
+        <div className="rounded-xl bg-black/30 px-3 py-2 text-center backdrop-blur">
+          <div className="text-white/45 text-[10px] uppercase tracking-wider">Tee</div>
+          <div className="text-white font-bold">Marked</div>
+        </div>
+        <div className="rounded-xl bg-black/30 px-3 py-2 text-center backdrop-blur">
+          <div className="text-white/45 text-[10px] uppercase tracking-wider">Green</div>
+          <div className="text-white font-bold">Marked</div>
         </div>
       </div>
     </div>
@@ -143,6 +199,9 @@ function IllustratedHoleMap({ hole }: { hole: number }) {
         <div className="text-white/50 text-[10px] uppercase tracking-wider">Club view</div>
         <div className="text-white text-sm font-semibold">Fairway guide</div>
       </div>
+      <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-black/25 px-3 py-2 text-center text-white/70 text-xs backdrop-blur">
+        Mark this hole's tee and green in GPS Rangefinder to unlock a measured layout.
+      </div>
     </div>
   );
 }
@@ -161,8 +220,7 @@ export function FairwayMap({
   canNext = true,
 }: FairwayMapProps) {
   const teeLabel = tee === "womens" ? "Women's card" : "Men's card";
-  const satelliteUrl = mapboxSatelliteUrl(teeLocation, greenLocation);
-  const hasRealMap = Boolean(satelliteUrl && teeLocation && greenLocation);
+  const hasGpsLayout = Boolean(teeLocation && greenLocation);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-white/20 bg-slate-950/45 shadow-2xl shadow-black/20 mb-6">
@@ -179,7 +237,7 @@ export function FairwayMap({
         <div className="text-center min-w-0">
           <div className="text-green-300 text-xs font-semibold uppercase tracking-wider">Hole {hole}</div>
           <div className="text-white font-bold text-lg leading-tight">Par {par} · {metres} m · SI {strokeIndex}</div>
-          <div className="text-white/45 text-xs">{teeLabel} · {hasRealMap ? "Real satellite layout" : "Illustrated guide"}</div>
+          <div className="text-white/45 text-xs">{teeLabel} · {hasGpsLayout ? "GPS measured layout" : "Illustrated guide"}</div>
         </div>
         <button
           type="button"
@@ -192,8 +250,8 @@ export function FairwayMap({
         </button>
       </div>
 
-      {satelliteUrl && teeLocation && greenLocation ? (
-        <SatelliteHoleMap hole={hole} teeLocation={teeLocation} greenLocation={greenLocation} mapUrl={satelliteUrl} />
+      {teeLocation && greenLocation ? (
+        <GpsHoleDiagram hole={hole} teeLocation={teeLocation} greenLocation={greenLocation} />
       ) : (
         <IllustratedHoleMap hole={hole} />
       )}
@@ -204,8 +262,8 @@ export function FairwayMap({
           <div className="text-white font-bold">{par}</div>
         </div>
         <div className="rounded-xl bg-white/10 px-3 py-2 text-center">
-          <div className="text-white/45 text-[10px] uppercase tracking-wider">Metres</div>
-          <div className="text-white font-bold tabular-nums">{metres}</div>
+          <div className="text-white/45 text-[10px] uppercase tracking-wider">Card</div>
+          <div className="text-white font-bold tabular-nums">{metres} m</div>
         </div>
         <div className="rounded-xl bg-white/10 px-3 py-2 text-center">
           <div className="text-white/45 text-[10px] uppercase tracking-wider">Index</div>
