@@ -44,8 +44,8 @@ function DistanceReadout({
   const metres =
     target && position ? distanceMeters(position, target) : null;
   return (
-    <div className="flex-1 bg-white/5 rounded-2xl p-4 text-center">
-      <div className="text-green-300 text-xs font-semibold uppercase tracking-wider mb-1">
+    <div className="flex-1 app-panel-soft border rounded-xl p-4 text-center">
+      <div className="app-accent-text text-xs font-semibold uppercase tracking-wider mb-1">
         {label}
       </div>
       {metres === null ? (
@@ -56,7 +56,7 @@ function DistanceReadout({
         <div>
           <div className="text-white font-bold text-4xl tabular-nums leading-none">
             {Math.round(metres)}
-            <span className="text-base font-semibold text-green-300 ml-1">m</span>
+            <span className="text-base font-semibold app-accent-text ml-1">m</span>
           </div>
         </div>
       )}
@@ -157,22 +157,22 @@ export function GpsRangefinder({
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-4 mb-6">
+    <div className="app-panel backdrop-blur border rounded-2xl p-4 mb-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-green-300 text-xs font-semibold uppercase tracking-wider">
+        <h2 className="app-accent-text text-xs font-semibold uppercase tracking-wider">
           GPS Rangefinder
         </h2>
         {watching ? (
           <button
             onClick={stopGps}
-            className="text-xs font-semibold text-white/70 hover:text-white bg-white/10 px-3 py-1.5 rounded-full transition-colors"
+            className="app-btn app-btn-secondary min-h-9 px-3 py-1.5 text-xs"
           >
             Stop
           </button>
         ) : (
           <button
             onClick={startGps}
-            className="text-xs font-semibold text-green-900 bg-green-400 hover:bg-green-300 px-3 py-1.5 rounded-full transition-colors"
+            className="app-btn app-btn-primary min-h-9 px-3 py-1.5 text-xs"
           >
             Start GPS
           </button>
@@ -185,7 +185,7 @@ export function GpsRangefinder({
           aria-label="Previous hole"
           onClick={() => onHoleChange(Math.max(1, hole - 1))}
           disabled={hole <= 1}
-          className="w-11 h-11 flex items-center justify-center bg-white/15 hover:bg-white/25 disabled:opacity-30 text-white rounded-xl font-bold text-2xl leading-none transition-colors"
+          className="app-icon-btn h-11 w-11 disabled:opacity-30 text-2xl font-bold"
         >
           −
         </button>
@@ -197,7 +197,7 @@ export function GpsRangefinder({
           aria-label="Next hole"
           onClick={() => onHoleChange(Math.min(18, hole + 1))}
           disabled={hole >= 18}
-          className="w-11 h-11 flex items-center justify-center bg-white/15 hover:bg-white/25 disabled:opacity-30 text-white rounded-xl font-bold text-2xl leading-none transition-colors"
+          className="app-icon-btn h-11 w-11 disabled:opacity-30 text-2xl font-bold"
         >
           +
         </button>
@@ -213,7 +213,7 @@ export function GpsRangefinder({
       {error ? (
         <p className="text-red-300 text-sm text-center mb-3">{error}</p>
       ) : watching && !position ? (
-        <p className="text-green-300 text-sm text-center mb-3 animate-pulse">
+        <p className="app-accent-text text-sm text-center mb-3 animate-pulse">
           Acquiring satellites…
         </p>
       ) : position ? (
@@ -232,14 +232,14 @@ export function GpsRangefinder({
         <button
           onClick={() => markPoint("tee")}
           disabled={!position || saving !== null}
-          className="flex-1 bg-white/15 hover:bg-white/25 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+          className="app-btn app-btn-secondary flex-1 py-2.5 text-sm disabled:opacity-40"
         >
           {saving === "tee" ? "Marking…" : tee ? "Re-mark Tee" : "Mark Tee Here"}
         </button>
         <button
           onClick={() => markPoint("green")}
           disabled={!position || saving !== null}
-          className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-40 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+          className="app-btn app-btn-primary flex-1 py-2.5 text-sm disabled:opacity-40"
         >
           {saving === "green"
             ? "Marking…"
