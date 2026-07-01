@@ -36,3 +36,64 @@ code {
 .app-accent-text {
   color: #bef264;
 }
+
+
+.app-btn {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  font-weight: 800;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 120ms ease;
+}
+
+.app-btn:active {
+  transform: translateY(1px);
+}
+
+.app-btn-primary {
+  background: #84cc16;
+  color: #111827;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
+}
+
+.app-btn-primary:hover {
+  background: #a3e635;
+}
+
+.app-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f8fafc;
+}
+
+.app-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.app-icon-btn {
+  display: inline-flex;
+  min-height: 44px;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.app-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.app-segmented {
+  display: inline-flex;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+}
