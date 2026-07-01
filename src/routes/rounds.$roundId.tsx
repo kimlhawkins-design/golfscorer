@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Flag, MapPin, Minus, PencilLine, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flag, MapPin, PencilLine } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteScore, getRound, upsertScore, updatePlayerHandicap, updatePlayerTee } from "../server/golf.functions";
 import { getCourse, getTee, parsFor, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
@@ -48,10 +48,6 @@ function pointsBg(points: number | undefined) {
 }
 
 
-function rankLabel(index: number) {
-  const labels = ["1st", "2nd", "3rd", "4th"];
-  return labels[index] ?? String(index + 1) + "th";
-}
 function CurrentHoleControl({
   hole,
   par,
@@ -505,26 +501,22 @@ function RoundPage() {
 
         {/* Score Entry Panel */}
         {activeHole !== null && (
-          <div className="mb-6 overflow-hidden rounded-2xl border border-green-400/35 bg-slate-950/45 shadow-xl shadow-emerald-950/25">
-            <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/5 px-4 py-3">
-              <div className="min-w-0">
-                <div className="text-green-300 text-xs font-semibold uppercase tracking-wider">Score entry</div>
-                <h3 className="text-white font-black text-2xl leading-tight">Hole {activeHole}</h3>
-                <p className="text-white/55 text-sm">
+          <div className="bg-emerald-800/80 backdrop-blur border border-green-500/50 rounded-2xl p-5 mb-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-white font-bold text-lg">Hole {activeHole}</h3>
+                <p className="text-green-300 text-sm">
                   Par {refPars[activeHole - 1]} · {DIST[activeHole - 1]} m · SI {SI[activeHole - 1]}
                 </p>
               </div>
               <button
-                type="button"
-                aria-label="Close score entry"
                 onClick={() => setActiveHole(null)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+                className="text-white/50 hover:text-white text-xl transition-colors"
               >
-                <X className="h-5 w-5" aria-hidden="true" />
+                ✕
               </button>
             </div>
-
-            <div className="space-y-3 p-3 sm:p-4">
+            <div className="space-y-3 mb-5">
               {players.map((p) => {
                 const strokes = holeInputs[p.id] ? parseInt(holeInputs[p.id], 10) : undefined;
                 const par = parsOf(p.id)[activeHole - 1];
@@ -535,80 +527,65 @@ function RoundPage() {
                     ? stablefordPoints(strokes, par, handicapOf(p.id), siOf(p.id)[activeHole - 1])
                     : undefined;
                 return (
-                  <div key={p.id} className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-sm shadow-black/10">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-white font-bold truncate">{p.name}</div>
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          {label && (
-                            <span className={"text-xs font-bold px-2 py-0.5 rounded-full " + label.color}>
-                              {label.label}
-                            </span>
-                          )}
-                          {pts !== undefined && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-100">
-                              {pts} pt{pts === 1 ? "" : "s"}
-                            </span>
-                          )}
-                          {recv > 0 && (
-                            <span className="text-[11px] font-semibold text-green-200/75">
-                              +{recv} stroke{recv === 1 ? "" : "s"}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="rounded-xl bg-emerald-950/55 px-3 py-1 text-right">
-                        <div className="text-white/40 text-[10px] uppercase tracking-wider">Score</div>
-                        <div className="text-white font-black text-2xl tabular-nums leading-none">
-                          {strokes ?? "-"}
-                        </div>
+                  <div key={p.id} className="flex items-center justify-between gap-3 bg-white/5 rounded-2xl p-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-white font-semibold truncate">{p.name}</span>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {label && (
+                          <span className={`self-start text-xs font-bold px-2 py-0.5 rounded-full ${label.color}`}>
+                            {label.label}
+                          </span>
+                        )}
+                        {pts !== undefined && (
+                          <span className="self-start text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-100">
+                            {pts} pt{pts === 1 ? "" : "s"}
+                          </span>
+                        )}
+                        {recv > 0 && (
+                          <span className="self-start text-[10px] text-green-300/70">
+                            +{recv} stroke{recv === 1 ? "" : "s"}
+                          </span>
+                        )}
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-[56px_1fr_56px] items-center gap-3">
+                    <div className="flex items-center gap-3 shrink-0">
                       <button
                         type="button"
-                        aria-label={"Decrease " + p.name + " score"}
+                        aria-label={`Decrease ${p.name}'s score`}
                         onClick={() => {
                           const cur = parseInt(holeInputs[p.id] || "", 10);
                           setPlayerHoleScore(p.id, Number.isNaN(cur) ? Math.max(1, par - 1) : cur - 1);
                         }}
-                        className="flex h-14 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/25"
+                        className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
                       >
-                        <Minus className="h-6 w-6" aria-hidden="true" />
+                        −
                       </button>
-
-                      <div className="h-14 rounded-xl border border-white/10 bg-black/15 text-center">
-                        <div className="pt-1 text-white/40 text-[10px] uppercase tracking-wider">Tap to adjust</div>
-                        <div className="text-white font-black text-3xl leading-7 tabular-nums">
-                          {strokes ?? "-"}
-                        </div>
-                      </div>
-
+                      <span className="w-12 text-center text-white font-bold text-3xl tabular-nums">
+                        {strokes ?? "—"}
+                      </span>
                       <button
                         type="button"
-                        aria-label={"Increase " + p.name + " score"}
+                        aria-label={`Increase ${p.name}'s score`}
                         onClick={() => {
                           const cur = parseInt(holeInputs[p.id] || "", 10);
                           setPlayerHoleScore(p.id, Number.isNaN(cur) ? par : cur + 1);
                         }}
-                        className="flex h-14 items-center justify-center rounded-xl bg-green-500 text-white shadow-lg shadow-green-950/20 transition-colors hover:bg-green-400 active:bg-green-300"
+                        className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
                       >
-                        <Plus className="h-6 w-6" aria-hidden="true" />
+                        +
                       </button>
                     </div>
                   </div>
                 );
               })}
             </div>
-
-            <div className="grid grid-cols-1 gap-3 border-t border-white/10 bg-black/15 p-3 sm:grid-cols-2">
+            <div className="flex gap-3">
               <button
                 onClick={saveHole}
                 disabled={saving}
-                className="rounded-xl bg-green-500 px-4 py-3 text-white font-bold shadow-lg shadow-green-950/20 transition-colors hover:bg-green-400 disabled:opacity-50"
+                className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
               >
-                {saving ? "Saving..." : "Save hole"}
+                {saving ? "Saving…" : "Save Hole"}
               </button>
               {activeHole < 18 && (
                 <button
@@ -618,31 +595,29 @@ function RoundPage() {
                     openHole(nextHole);
                   }}
                   disabled={saving}
-                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white font-bold transition-colors hover:bg-white/20 disabled:opacity-50"
+                  className="flex-1 bg-white/15 hover:bg-white/25 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
                 >
-                  Save and next
+                  Save & Next →
                 </button>
               )}
             </div>
           </div>
         )}
 
+
         {/* Leaderboard */}
-        <div className="mb-6 overflow-hidden rounded-2xl border border-white/15 bg-white/10 backdrop-blur">
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-            <div>
-              <h2 className="text-green-300 text-xs font-semibold uppercase tracking-wider">Leaderboard</h2>
-              <p className="text-white/45 text-xs">Ranked by {scoringMode === "stableford" ? "Stableford points" : "stroke score"}</p>
-            </div>
-            <div className="flex rounded-xl overflow-hidden border border-white/15 bg-white/5 text-xs">
+        <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-4 mb-6">
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <h2 className="text-green-300 text-xs font-semibold uppercase tracking-wider">Leaderboard</h2>
+            <div className="flex rounded-lg overflow-hidden border border-white/20 text-xs">
               {(["stableford", "stroke"] as const).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setScoringMode(mode)}
-                  className={`px-3 py-2 font-bold transition-colors ${
+                  className={`px-3 py-1.5 font-semibold transition-colors ${
                     scoringMode === mode
                       ? "bg-green-500 text-white"
-                      : "text-green-200 hover:bg-white/10"
+                      : "bg-white/5 text-green-200 hover:bg-white/10"
                   }`}
                 >
                   {mode === "stableford" ? "Stableford" : "Stroke"}
@@ -650,8 +625,7 @@ function RoundPage() {
               ))}
             </div>
           </div>
-
-          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {[...players]
               .sort((a, b) => {
                 const aHoles = holesPlayed(a.id);
@@ -668,71 +642,44 @@ function RoundPage() {
                 const toPar = playerToPar(p.id);
                 const points = playerPoints(p.id);
                 const holes = holesPlayed(p.id);
-                const isLeader = i === 0 && holes > 0;
-                const progress = Math.round((holes / 18) * 100);
                 return (
-                  <div
-                    key={p.id}
-                    className={`rounded-2xl border p-3 ${
-                      isLeader
-                        ? "border-green-300/45 bg-green-400/15 shadow-lg shadow-green-950/20"
-                        : "border-white/10 bg-white/10"
-                    }`}
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className={`rounded-full px-2 py-1 text-xs font-black ${
-                        isLeader ? "bg-green-300 text-green-950" : "bg-white/10 text-green-200"
-                      }`}>
-                        {rankLabel(i)}
-                      </span>
-                      <span className="text-white/45 text-[11px] font-semibold tabular-nums">{holes}/18</span>
-                    </div>
-
-                    <div className="flex items-end justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-white font-bold truncate">{p.name}</div>
-                        <div className="text-white/45 text-xs">
-                          Hcp {p.handicap ?? 0} · {teeOf(p.id) === "womens" ? "Women's" : "Men's"}
+                  <div key={p.id} className="bg-white/10 rounded-xl p-3 text-center">
+                    <div className="text-xs text-green-400 mb-1">#{i + 1}</div>
+                    <div className="text-white font-bold truncate">{p.name}</div>
+                    {scoringMode === "stableford" ? (
+                      <>
+                        <div className="text-2xl font-bold mt-1 text-white">
+                          {holes > 0 ? points : "—"}
                         </div>
-                      </div>
-                      {scoringMode === "stableford" ? (
-                        <div className="text-right">
-                          <div className="text-white font-black text-3xl leading-none tabular-nums">
-                            {holes > 0 ? points : "-"}
-                          </div>
-                          <div className="text-green-300 text-xs font-bold">pts</div>
+                        <div className="text-sm font-semibold text-green-400">
+                          {holes > 0 ? "pts" : ""}
                         </div>
-                      ) : (
-                        <div className="text-right">
-                          <div className="text-white font-black text-3xl leading-none tabular-nums">
-                            {holes > 0 ? total : "-"}
-                          </div>
-                          <div className={`text-xs font-bold ${
-                            toPar < 0 ? "text-yellow-300" : toPar === 0 ? "text-green-300" : "text-orange-300"
-                          }`}>
-                            {holes > 0
-                              ? toPar === 0
-                                ? "E"
-                                : toPar > 0
-                                ? "+" + toPar
-                                : toPar
-                              : "-"}
-                          </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-bold mt-1 text-white">{holes > 0 ? total : "—"}</div>
+                        <div className={`text-sm font-semibold ${
+                          toPar < 0 ? "text-yellow-400" : toPar === 0 ? "text-green-400" : "text-orange-400"
+                        }`}>
+                          {holes > 0
+                            ? toPar === 0
+                              ? "E"
+                              : toPar > 0
+                              ? `+${toPar}`
+                              : `${toPar}`
+                            : "—"}
                         </div>
-                      )}
-                    </div>
-
-                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/20">
-                      <div
-                        className={isLeader ? "h-full rounded-full bg-green-300" : "h-full rounded-full bg-green-500/60"}
-                        style={{ width: progress + "%" }}
-                      />
+                      </>
+                    )}
+                    <div className="text-white/40 text-xs">
+                      Hcp {p.handicap ?? 0} · {teeOf(p.id) === "womens" ? "W" : "M"} · {holes}/18
                     </div>
                   </div>
                 );
               })}
           </div>
         </div>
+
         {/* Handicaps */}
         <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-4 mb-6">
           <div className="flex items-center justify-between mb-3 gap-2">
