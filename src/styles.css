@@ -14,8 +14,25 @@ code {
     monospace;
 }
 
-/* Full-page green background shared across all routes. The deep green stops
-   keep the white scorecard text and cards readable on top. */
+/* Shared app shell. A charcoal-first base keeps the UI from becoming green-on-green;
+   golf green is reserved for actions, active states, and field/course accents. */
 .app-bg-green {
-  background-image: linear-gradient(135deg, #14532d 0%, #166534 50%, #15803d 100%);
+  background:
+    radial-gradient(circle at 50% -10%, rgba(34, 197, 94, 0.2), transparent 34rem),
+    linear-gradient(135deg, #101612 0%, #17211c 46%, #0f1915 100%);
+}
+
+.app-panel {
+  background: rgba(24, 30, 27, 0.82);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.app-panel-soft {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.app-accent-text {
+  color: #bef264;
 }
