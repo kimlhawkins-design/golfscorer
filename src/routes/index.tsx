@@ -121,6 +121,12 @@ function Home() {
             Scorecard
           </Link>
           <Link
+            to="/courses"
+            className="flex-1 text-center py-3 font-semibold bg-white/5 text-green-200 hover:bg-white/10 transition-colors"
+          >
+            Courses
+          </Link>
+          <Link
             to="/rules"
             className="flex-1 text-center py-3 font-semibold bg-white/5 text-green-200 hover:bg-white/10 transition-colors"
           >
