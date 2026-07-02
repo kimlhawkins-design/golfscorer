@@ -49,3 +49,10 @@ export const holeLocations = pgTable("hole_locations", {
   teeLng: doublePrecision("tee_lng"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const courseNotes = pgTable("course_notes", {
+  id: serial().primaryKey(),
+  course: text().notNull(),
+  notes: text().notNull().default(""),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
