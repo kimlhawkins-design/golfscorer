@@ -20,6 +20,14 @@ export const players = pgTable("players", {
   tee: text().notNull().default("mens"),
 });
 
+export const playerProfiles = pgTable("player_profiles", {
+  id: serial().primaryKey(),
+  name: text().notNull(),
+  handicap: doublePrecision().notNull().default(0),
+  tee: text().notNull().default("mens"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const scores = pgTable("scores", {
   id: serial().primaryKey(),
   roundId: integer("round_id").notNull().references(() => rounds.id),
