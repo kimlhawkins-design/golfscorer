@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../../db/index.js";
-import { rounds, players, scores, holeLocations, playerProfiles } from "../../db/schema.js";
+import { rounds, players, scores, holeLocations, playerProfiles, courseNotes } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
 
 export const getRounds = createServerFn().handler(async () => {
@@ -34,6 +34,42 @@ export const deletePlayerProfile = createServerFn({ method: "POST" })
     return { success: true };
   });
 
+
+
+export const getCourseSetupData = createServerFn({ method: "GET" }).handler(async () => {
+  const locations = await db.select().from(holeLocations);
+  const notes = await db.select().from(courseNotes);
+  return { locations, notes };
+});
+
+export const saveCourseNote = createServerFn({ method: "POST" })
+  .inputValidator((data: { course: string; notes: string }) => data)
+  .handler(async ({ data }) => {
+    const existing = await db.select().from(courseNotes).where(eq(courseNotes.course, data.course));
+    if (existing.length > 0) {
+      await db.update(courseNotes).set({ notes: data.notes }).where(eq(courseNotes.id, existing[0].id));
+    } else {
+      await db.insert(courseNotes).values({ course: data.course, notes: data.notes });
+    }
+    return { success: true };
+  });
+
+export const createCourseSetupRound = createServerFn({ method: "POST" })
+  .inputValidator((data: { course: string; courseName: string }) => data)
+  .handler(async ({ data }) => {
+    const [round] = await db
+      .insert(rounds)
+      .values({ name: data.courseName + " mapping", course: data.course, scoringType: "casual" })
+      .returning();
+    await db.insert(players).values({
+      roundId: round.id,
+      name: "Course setup",
+      position: 1,
+      handicap: 0,
+      tee: "mens",
+    });
+    return round;
+  });
 
 export const getRound = createServerFn({ method: "GET" })
   .inputValidator((data: { id: number }) => data)
@@ -202,4 +238,3 @@ export const setHoleLocation = createServerFn({ method: "POST" })
     }
     return { success: true };
   });
-
