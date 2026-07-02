@@ -87,7 +87,7 @@ export const COURSES: Course[] = [
   },
   {
     key: "yarrawonga-mulwala",
-    name: "Yarrawonga Mulwala",
+    name: "Yarrawonga Mulwala Golf Club Resort (Lake)",
     // Placeholder scorecard data until the official card is supplied.
     pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
     mens: {
@@ -97,6 +97,35 @@ export const COURSES: Course[] = [
     womens: {
       strokeIndex: [3, 1, 9, 17, 5, 11, 15, 7, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
       distances: [335, 450, 320, 135, 345, 315, 140, 455, 325, 340, 310, 130, 450, 330, 305, 140, 320, 440],
+    },
+  },
+
+  {
+    key: "yarrawonga-executive",
+    name: "Yarrawonga Mulwala Golf Club Resort (Executive)",
+    // Placeholder scorecard data. The Executive course may be 9 holes; this keeps the app's 18-hole format until the official card is supplied.
+    pars: [3, 4, 3, 4, 3, 4, 3, 4, 3, 3, 4, 3, 4, 3, 4, 3, 4, 3],
+    mens: {
+      strokeIndex: [17, 7, 15, 5, 13, 3, 11, 1, 9, 18, 8, 16, 6, 14, 4, 12, 2, 10],
+      distances: [135, 275, 145, 290, 130, 300, 150, 310, 140, 135, 275, 145, 290, 130, 300, 150, 310, 140],
+    },
+    womens: {
+      strokeIndex: [17, 7, 15, 5, 13, 3, 11, 1, 9, 18, 8, 16, 6, 14, 4, 12, 2, 10],
+      distances: [110, 235, 115, 250, 105, 260, 120, 270, 110, 110, 235, 115, 250, 105, 260, 120, 270, 110],
+    },
+  },
+  {
+    key: "yarrawonga-murray",
+    name: "Yarrawonga Mulwala Golf Club Resort (Murray)",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [5, 1, 9, 17, 7, 11, 15, 3, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
+      distances: [375, 505, 360, 160, 385, 355, 170, 515, 365, 380, 350, 155, 510, 375, 345, 165, 360, 495],
+    },
+    womens: {
+      strokeIndex: [5, 1, 9, 17, 7, 11, 15, 3, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
+      distances: [330, 445, 315, 130, 340, 310, 135, 455, 320, 335, 305, 125, 450, 330, 300, 135, 315, 435],
     },
   },
 
@@ -112,6 +141,96 @@ export const COURSES: Course[] = [
     womens: {
       strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
       distances: [305, 410, 295, 115, 315, 290, 125, 415, 300, 310, 285, 110, 420, 305, 290, 120, 295, 405],
+    },
+  },
+
+  {
+    key: "myrtleford",
+    name: "Myrtleford Golf Club",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [360, 485, 350, 155, 370, 345, 165, 495, 360, 365, 340, 150, 490, 365, 350, 160, 355, 475],
+    },
+    womens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [315, 430, 305, 125, 325, 300, 135, 435, 315, 320, 295, 120, 430, 320, 305, 130, 310, 420],
+    },
+  },
+
+  {
+    key: "wangaratta",
+    name: "Wangaratta Golf Club",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [370, 500, 360, 160, 385, 350, 170, 510, 365, 375, 345, 155, 505, 380, 350, 165, 360, 490],
+    },
+    womens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [325, 440, 315, 130, 340, 305, 140, 450, 320, 330, 300, 125, 445, 335, 305, 135, 315, 430],
+    },
+  },
+
+  {
+    key: "jubilee",
+    name: "Jubilee Golf Club",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [355, 350, 475, 150, 365, 340, 360, 155, 485, 365, 345, 145, 490, 360, 350, 160, 355, 470],
+    },
+    womens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [310, 305, 420, 120, 320, 295, 315, 125, 430, 320, 300, 115, 435, 315, 305, 130, 310, 415],
+    },
+  },
+
+  {
+    key: "bright-country",
+    name: "Bright Country Golf Club",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [350, 470, 345, 145, 360, 335, 155, 480, 350, 360, 335, 140, 475, 355, 340, 150, 345, 465],
+    },
+    womens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [305, 415, 300, 115, 315, 290, 125, 425, 305, 315, 290, 110, 420, 310, 295, 120, 300, 410],
+    },
+  },
+
+  {
+    key: "mount-beauty",
+    name: "Mount Beauty Golf Club",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [345, 465, 340, 145, 355, 330, 155, 475, 345, 355, 330, 140, 470, 350, 335, 150, 340, 460],
+    },
+    womens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [300, 410, 295, 115, 310, 285, 125, 420, 300, 310, 285, 110, 415, 305, 290, 120, 295, 405],
+    },
+  },
+
+  {
+    key: "black-bull",
+    name: "Black Bull Golf Club",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [385, 520, 375, 170, 395, 365, 180, 530, 380, 390, 360, 165, 525, 385, 355, 175, 370, 510],
+    },
+    womens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [340, 460, 330, 140, 350, 320, 145, 465, 335, 345, 315, 135, 460, 340, 310, 145, 325, 450],
     },
   },
   {
@@ -187,3 +306,4 @@ export function stablefordPoints(
   const net = strokes - strokesReceived(handicap, strokeIndex);
   return Math.max(0, 2 - (net - par));
 }
+
