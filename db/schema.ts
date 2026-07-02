@@ -26,6 +26,7 @@ export const scores = pgTable("scores", {
   playerId: integer("player_id").notNull().references(() => players.id),
   holeNumber: integer("hole_number").notNull(),
   strokes: integer().notNull(),
+  putts: integer("putts"),
 });
 
 // GPS coordinates for the tee and green of each hole, keyed by course + hole.
