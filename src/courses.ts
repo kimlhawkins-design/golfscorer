@@ -56,6 +56,64 @@ export const COURSES: Course[] = [
       distances: [325, 415, 315, 130, 335, 305, 130, 420, 310, 320, 300, 125, 430, 330, 300, 135, 315, 410],
     },
   },
+
+  {
+    key: "barham",
+    name: "Barham NSW",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [360, 485, 350, 155, 375, 345, 165, 500, 360, 370, 340, 150, 495, 365, 355, 160, 350, 475],
+    },
+    womens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [315, 430, 305, 125, 330, 300, 135, 440, 315, 325, 295, 120, 435, 320, 310, 130, 305, 420],
+    },
+  },
+  {
+    key: "cobram-barooga",
+    name: "Cobram Barooga",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [5, 1, 11, 17, 7, 9, 15, 3, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
+      distances: [370, 500, 360, 160, 385, 355, 170, 510, 365, 375, 350, 155, 505, 380, 345, 165, 360, 490],
+    },
+    womens: {
+      strokeIndex: [5, 1, 11, 17, 7, 9, 15, 3, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
+      distances: [325, 440, 315, 130, 340, 310, 135, 450, 320, 330, 305, 125, 445, 335, 300, 135, 315, 430],
+    },
+  },
+  {
+    key: "yarrawonga-mulwala",
+    name: "Yarrawonga Mulwala",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [3, 1, 9, 17, 5, 11, 15, 7, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
+      distances: [380, 510, 365, 165, 390, 360, 175, 520, 370, 385, 355, 160, 515, 375, 350, 170, 365, 500],
+    },
+    womens: {
+      strokeIndex: [3, 1, 9, 17, 5, 11, 15, 7, 13, 6, 8, 18, 2, 10, 12, 16, 14, 4],
+      distances: [335, 450, 320, 135, 345, 315, 140, 455, 325, 340, 310, 130, 450, 330, 305, 140, 320, 440],
+    },
+  },
+
+  {
+    key: "yackandandah",
+    name: "Yackandandah",
+    // Placeholder scorecard data until the official card is supplied.
+    pars: [4, 5, 4, 3, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+    mens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [350, 465, 340, 145, 360, 335, 155, 470, 345, 355, 330, 140, 475, 350, 335, 150, 340, 460],
+    },
+    womens: {
+      strokeIndex: [7, 1, 9, 17, 5, 11, 15, 3, 13, 8, 10, 18, 2, 6, 12, 16, 14, 4],
+      distances: [305, 410, 295, 115, 315, 290, 125, 415, 300, 310, 285, 110, 420, 305, 290, 120, 295, 405],
+    },
+  },
   {
     key: "thurgoona",
     name: "Thurgoona",
