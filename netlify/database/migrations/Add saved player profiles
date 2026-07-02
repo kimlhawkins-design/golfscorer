@@ -5,3 +5,4 @@ CREATE TABLE "player_profiles" (
 	"tee" text DEFAULT 'mens' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
+
