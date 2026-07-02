@@ -186,14 +186,20 @@ function RoundPage() {
   const gpsSectionRef = useRef<HTMLDivElement | null>(null);
   const scorecardRef = useRef<HTMLDivElement | null>(null);
 
-  // Build a map: playerId -> holeNumber -> strokes
+  // Build quick lookup maps for scorecard rendering and round stats.
   const scoreMap = new Map<string, number>();
+  const puttMap = new Map<string, number>();
   for (const s of scores) {
-    scoreMap.set(`${s.playerId}-${s.holeNumber}`, s.strokes);
+    const key = `${s.playerId}-${s.holeNumber}`;
+    scoreMap.set(key, s.strokes);
+    if (s.putts !== null && s.putts !== undefined) puttMap.set(key, s.putts);
   }
 
   const getScore = (playerId: number, hole: number) =>
     scoreMap.get(`${playerId}-${hole}`);
+
+  const getPutts = (playerId: number, hole: number) =>
+    puttMap.get(`${playerId}-${hole}`);
 
   const handicapOf = (playerId: number) =>
     players.find((p) => p.id === playerId)?.handicap ?? 0;
@@ -251,6 +257,25 @@ function RoundPage() {
       if (getScore(playerId, h) !== undefined) count++;
     }
     return count;
+  };
+
+  const playerPutts = (playerId: number) => {
+    let total = 0;
+    for (let h = 1; h <= 18; h++) total += getPutts(playerId, h) ?? 0;
+    return total;
+  };
+
+  const puttHoles = (playerId: number) => {
+    let count = 0;
+    for (let h = 1; h <= 18; h++) {
+      if (getPutts(playerId, h) !== undefined) count++;
+    }
+    return count;
+  };
+
+  const averagePutts = (playerId: number) => {
+    const holes = puttHoles(playerId);
+    return holes ? (playerPutts(playerId) / holes).toFixed(1) : "-";
   };
 
   const openHole = (hole: number) => {
@@ -438,30 +463,41 @@ function RoundPage() {
                 <td className="py-2.5 px-2 text-center text-lime-200/50 text-xs tabular-nums">{DIST[hole - 1]}</td>
                 {players.map((p) => {
                   const s = getScore(p.id, hole);
+                  const putts = getPutts(p.id, hole);
                   if (scoringMode === "stableford") {
                     const pts = holePoints(p.id, hole);
                     return (
                       <td key={p.id} className="py-2.5 px-2 text-center">
-                        <span
-                          className={`inline-block w-9 h-9 leading-9 rounded-full text-sm font-semibold ${
-                            pts !== undefined ? pointsBg(pts) : "text-white/30"
-                          }`}
-                          title={s !== undefined ? `${s} strokes` : undefined}
-                        >
-                          {pts !== undefined ? pts : "—"}
-                        </span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span
+                            className={`inline-block h-9 w-9 rounded-full text-sm font-semibold leading-9 ${
+                              pts !== undefined ? pointsBg(pts) : "text-white/30"
+                            }`}
+                            title={s !== undefined ? `${s} strokes` : undefined}
+                          >
+                            {pts !== undefined ? pts : "—"}
+                          </span>
+                          {putts !== undefined && (
+                            <span className="text-[10px] font-bold text-sky-200/75 tabular-nums">P {putts}</span>
+                          )}
+                        </div>
                       </td>
                     );
                   }
                   return (
                     <td key={p.id} className="py-2.5 px-2 text-center">
-                      <span
-                        className={`inline-block w-9 h-9 leading-9 rounded-full text-sm font-semibold ${
-                          s !== undefined ? scoreBg(s, parsOf(p.id)[hole - 1]) : "text-white/30"
-                        }`}
-                      >
-                        {s !== undefined ? s : "—"}
-                      </span>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span
+                          className={`inline-block h-9 w-9 rounded-full text-sm font-semibold leading-9 ${
+                            s !== undefined ? scoreBg(s, parsOf(p.id)[hole - 1]) : "text-white/30"
+                          }`}
+                        >
+                          {s !== undefined ? s : "—"}
+                        </span>
+                        {putts !== undefined && (
+                          <span className="text-[10px] font-bold text-sky-200/75 tabular-nums">P {putts}</span>
+                        )}
+                      </div>
                     </td>
                   );
                 })}
@@ -720,6 +756,54 @@ function RoundPage() {
           </div>
         )}
 
+        {/* Round Stats */}
+        <div className="mb-6 overflow-hidden rounded-2xl border app-panel backdrop-blur">
+          <div className="border-b border-white/10 px-4 py-3">
+            <h2 className="app-accent-text text-xs font-semibold uppercase tracking-wider">Round stats</h2>
+            <p className="text-white/45 text-xs">Score, points, and putting at a glance</p>
+          </div>
+          <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+            {players.map((p) => {
+              const holes = holesPlayed(p.id);
+              const putts = playerPutts(p.id);
+              const trackedPutts = puttHoles(p.id);
+              const total = playerTotal(p.id);
+              const points = playerPoints(p.id);
+              const toPar = playerToPar(p.id);
+              return (
+                <div key={p.id} className="rounded-xl border border-white/10 bg-white/10 p-3">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-white font-bold">{p.name}</div>
+                      <div className="text-white/45 text-xs">{holes}/18 holes scored</div>
+                    </div>
+                    <div className="rounded-lg border border-lime-300/25 bg-lime-300/10 px-3 py-1 text-right">
+                      <div className="text-[10px] uppercase tracking-wider text-lime-100/65">{scoringMode === "stableford" ? "Points" : "Score"}</div>
+                      <div className="text-xl font-black text-white tabular-nums">{holes ? (scoringMode === "stableford" ? points : total) : "-"}</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-lg bg-black/20 px-2 py-2">
+                      <div className="text-[10px] uppercase tracking-wider text-white/40">To par</div>
+                      <div className={`font-black tabular-nums ${toPar < 0 ? "text-yellow-300" : toPar === 0 ? "text-lime-300" : "text-orange-300"}`}>
+                        {holes ? (toPar === 0 ? "E" : toPar > 0 ? "+" + toPar : toPar) : "-"}
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-black/20 px-2 py-2">
+                      <div className="text-[10px] uppercase tracking-wider text-sky-200/55">Putts</div>
+                      <div className="font-black text-white tabular-nums">{trackedPutts ? putts : "-"}</div>
+                    </div>
+                    <div className="rounded-lg bg-black/20 px-2 py-2">
+                      <div className="text-[10px] uppercase tracking-wider text-sky-200/55">Avg putts</div>
+                      <div className="font-black text-white tabular-nums">{averagePutts(p.id)}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Leaderboard */}
         <div className="scroll-mt-4 mb-6 overflow-hidden rounded-2xl border app-panel backdrop-blur">
           <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
@@ -970,6 +1054,8 @@ function RoundPage() {
                     const toPar = playerToPar(p.id);
                     const points = playerPoints(p.id);
                     const holes = holesPlayed(p.id);
+                    const putts = playerPutts(p.id);
+                    const trackedPutts = puttHoles(p.id);
                     return (
                       <td key={p.id} className="py-3 px-2 text-center min-w-[64px]">
                         {holes > 0 ? (
@@ -977,6 +1063,7 @@ function RoundPage() {
                             <div>
                               <div className="text-white font-bold">{points}</div>
                               <div className="text-xs font-semibold text-lime-300">pts</div>
+                              {trackedPutts > 0 && <div className="text-[10px] font-bold text-sky-200/70">P {putts}</div>}
                             </div>
                           ) : (
                             <div>
@@ -986,6 +1073,7 @@ function RoundPage() {
                               }`}>
                                 {toPar === 0 ? "E" : toPar > 0 ? `+${toPar}` : toPar}
                               </div>
+                              {trackedPutts > 0 && <div className="text-[10px] font-bold text-sky-200/70">P {putts}</div>}
                             </div>
                           )
                         ) : (
