@@ -1,11 +1,39 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../../db/index.js";
-import { rounds, players, scores, holeLocations } from "../../db/schema.js";
+import { rounds, players, scores, holeLocations, playerProfiles } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
 
 export const getRounds = createServerFn().handler(async () => {
   return db.select().from(rounds).orderBy(rounds.createdAt);
 });
+
+export const getPlayerProfiles = createServerFn({ method: "GET" }).handler(async () => {
+  return db.select().from(playerProfiles).orderBy(playerProfiles.name);
+});
+
+export const createPlayerProfile = createServerFn({ method: "POST" })
+  .inputValidator((data: { name: string; handicap: number; tee?: "mens" | "womens" }) => data)
+  .handler(async ({ data }) => {
+    const name = data.name.trim();
+    if (!name) throw new Error("Player name is required");
+    const [profile] = await db
+      .insert(playerProfiles)
+      .values({
+        name,
+        handicap: Math.max(0, Math.round((data.handicap || 0) * 10) / 10),
+        tee: data.tee ?? "mens",
+      })
+      .returning();
+    return profile;
+  });
+
+export const deletePlayerProfile = createServerFn({ method: "POST" })
+  .inputValidator((data: { id: number }) => data)
+  .handler(async ({ data }) => {
+    await db.delete(playerProfiles).where(eq(playerProfiles.id, data.id));
+    return { success: true };
+  });
+
 
 export const getRound = createServerFn({ method: "GET" })
   .inputValidator((data: { id: number }) => data)
@@ -174,4 +202,3 @@ export const setHoleLocation = createServerFn({ method: "POST" })
     }
     return { success: true };
   });
-
