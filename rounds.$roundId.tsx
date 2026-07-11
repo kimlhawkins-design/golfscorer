@@ -603,7 +603,7 @@ function RoundPage() {
                         aria-label={`Decrease ${p.name}'s score`}
                         onClick={() => {
                           const cur = parseInt(holeInputs[p.id] || "", 10);
-                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? Math.max(1, par - 1) : cur - 1);
+                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? 1 : cur - 1);
                         }}
                         className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
                       >
@@ -617,7 +617,7 @@ function RoundPage() {
                         aria-label={`Increase ${p.name}'s score`}
                         onClick={() => {
                           const cur = parseInt(holeInputs[p.id] || "", 10);
-                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? par : cur + 1);
+                          setPlayerHoleScore(p.id, Number.isNaN(cur) ? 1 : cur + 1);
                         }}
                         className="w-14 h-14 flex items-center justify-center bg-white/20 hover:bg-white/30 active:bg-white/40 text-white rounded-2xl font-bold text-3xl leading-none transition-colors select-none"
                       >
