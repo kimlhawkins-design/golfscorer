@@ -718,7 +718,7 @@ function RoundPage() {
                         aria-label={"Increase " + p.name + " putts"}
                         onClick={() => {
                           const cur = parseInt(puttInputs[p.id] || "", 10);
-                          setPlayerPutts(p.id, Number.isNaN(cur) ? 2 : cur + 1);
+                          setPlayerPutts(p.id, Number.isNaN(cur) ? 1 : cur + 1);
                         }}
                         className="app-icon-btn h-12 min-w-[60px] rounded-xl border border-sky-300/35 bg-sky-400 text-slate-950 shadow-lg shadow-sky-400/10 hover:bg-sky-300"
                       >
