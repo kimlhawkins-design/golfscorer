@@ -304,7 +304,7 @@ function RoundPage() {
   const setPlayerPutts = (playerId: number, next: number | "") => {
     setPuttInputs((current) => ({
       ...current,
-      [playerId]: next === "" ? "" : String(Math.max(0, Math.min(10, next))),
+      [playerId]: next === "" ? "" : String(Math.max(1, Math.min(10, next))),
     }));
   };
 
