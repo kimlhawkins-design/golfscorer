@@ -176,6 +176,7 @@ function RoundPage() {
   const [gpsHole, setGpsHole] = useState(1);
   const [holeInputs, setHoleInputs] = useState<Record<number, string>>({});
   const [puttInputs, setPuttInputs] = useState<Record<number, string>>({});
+  const [penaltyInputs, setPenaltyInputs] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
   const [editingHcp, setEditingHcp] = useState(false);
   const [hcpInputs, setHcpInputs] = useState<Record<number, string>>({});
@@ -281,14 +282,17 @@ function RoundPage() {
   const openHole = (hole: number) => {
     const inputs: Record<number, string> = {};
     const putts: Record<number, string> = {};
+    const penalties: Record<number, string> = {};
     for (const p of players) {
       const existing = getScore(p.id, hole);
       const existingScore = scores.find((s) => s.playerId === p.id && s.holeNumber === hole);
       inputs[p.id] = existing !== undefined ? String(existing) : "";
       putts[p.id] = existingScore?.putts !== null && existingScore?.putts !== undefined ? String(existingScore.putts) : "";
+      penalties[p.id] = String(existingScore?.penalties ?? 0);
     }
     setHoleInputs(inputs);
     setPuttInputs(putts);
+    setPenaltyInputs(penalties);
     setActiveHole(hole);
     setSelectedHole(hole);
     setGpsHole(hole);
@@ -305,6 +309,13 @@ function RoundPage() {
     setPuttInputs((current) => ({
       ...current,
       [playerId]: next === "" ? "" : String(Math.max(0, Math.min(10, next))),
+    }));
+  };
+
+  const setPlayerPenalties = (playerId: number, next: number) => {
+    setPenaltyInputs((current) => ({
+      ...current,
+      [playerId]: String(Math.max(0, Math.min(20, next))),
     }));
   };
 
@@ -326,6 +337,8 @@ function RoundPage() {
         const strokes = parseInt(val, 10);
         const rawPutts = puttInputs[p.id];
         const putts = rawPutts === "" || rawPutts === undefined ? null : parseInt(rawPutts, 10);
+        const rawPenalties = penaltyInputs[p.id];
+        const penalties = rawPenalties === undefined ? 0 : parseInt(rawPenalties, 10);
         if (!Number.isNaN(strokes) && strokes > 0) {
           await upsertFn({
             data: {
@@ -334,6 +347,7 @@ function RoundPage() {
               holeNumber: activeHole,
               strokes,
               putts: putts !== null && !Number.isNaN(putts) ? putts : null,
+              penalties: Number.isNaN(penalties) ? 0 : penalties,
             },
           });
         }
@@ -620,6 +634,7 @@ function RoundPage() {
               {players.map((p) => {
                 const strokes = holeInputs[p.id] ? parseInt(holeInputs[p.id], 10) : undefined;
                 const putts = puttInputs[p.id] ? parseInt(puttInputs[p.id], 10) : undefined;
+                const penalties = parseInt(penaltyInputs[p.id] ?? "0", 10);
                 const par = parsOf(p.id)[activeHole - 1];
                 const label = strokes ? scoreLabel(strokes, par) : null;
                 const recv = strokesReceived(handicapOf(p.id), siOf(p.id)[activeHole - 1]);
@@ -721,6 +736,34 @@ function RoundPage() {
                           setPlayerPutts(p.id, Number.isNaN(cur) ? 1 : cur + 1);
                         }}
                         className="app-icon-btn h-12 min-w-[60px] rounded-xl border border-sky-300/35 bg-sky-400 text-slate-950 shadow-lg shadow-sky-400/10 hover:bg-sky-300"
+                      >
+                        <Plus className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-[60px_1fr_60px] items-center gap-3">
+                      <button
+                        type="button"
+                        aria-label={"Decrease " + p.name + " penalties"}
+                        onClick={() => setPlayerPenalties(p.id, penalties - 1)}
+                        className="app-icon-btn h-12 min-w-[60px] rounded-xl border border-white/10 text-white"
+                        style={{ backgroundColor: "#343b38" }}
+                      >
+                        <Minus className="h-5 w-5" aria-hidden="true" />
+                      </button>
+
+                      <div className="h-12 rounded-xl border border-white/10 text-center" style={{ backgroundColor: "#101413" }}>
+                        <div className="pt-1 text-amber-200/60 text-[10px] uppercase tracking-wider">Penalties</div>
+                        <div className="text-white font-black text-2xl leading-6 tabular-nums">
+                          {penalties}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        aria-label={"Increase " + p.name + " penalties"}
+                        onClick={() => setPlayerPenalties(p.id, penalties + 1)}
+                        className="app-icon-btn h-12 min-w-[60px] rounded-xl border border-amber-300/35 bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/10 hover:bg-amber-300"
                       >
                         <Plus className="h-5 w-5" aria-hidden="true" />
                       </button>
