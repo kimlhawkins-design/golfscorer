@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getRounds, createRound, deleteRound, getPlayerProfiles, createPlayerProfile, deletePlayerProfile, getCourseSetupData, saveCourseNote, createCourseSetupRound } from "../server/golf.functions";
+import { getRounds, createRound, deleteRound, getPlayerProfiles, createPlayerProfile, deletePlayerProfile, updatePlayerProfileHandicap, getCourseSetupData, saveCourseNote, createCourseSetupRound } from "../server/golf.functions";
 import { COURSES, DEFAULT_COURSE_KEY, getCourse, type TeeKey } from "../courses";
 
 export const Route = createFileRoute("/")({
@@ -170,11 +170,13 @@ function Home() {
   const [profileHandicap, setProfileHandicap] = useState("");
   const [profileTee, setProfileTee] = useState<TeeKey>("mens");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingProfileHandicap, setSavingProfileHandicap] = useState<number | null>(null);
 
   const createRoundFn = useServerFn(createRound);
   const deleteRoundFn = useServerFn(deleteRound);
   const createProfileFn = useServerFn(createPlayerProfile);
   const deleteProfileFn = useServerFn(deletePlayerProfile);
+  const updateProfileHandicapFn = useServerFn(updatePlayerProfileHandicap);
   const saveNoteFn = useServerFn(saveCourseNote);
   const createSetupRoundFn = useServerFn(createCourseSetupRound);
 
@@ -244,6 +246,17 @@ function Home() {
     if (!confirm("Delete this saved player?")) return;
     await deleteProfileFn({ data: { id } });
     router.invalidate();
+  };
+
+  const saveProfileHandicap = async (id: number, value: string) => {
+    const handicap = Math.max(0, Math.round((parseFloat(value || "0") || 0) * 10) / 10);
+    setSavingProfileHandicap(id);
+    try {
+      await updateProfileHandicapFn({ data: { id, handicap } });
+      await router.invalidate();
+    } finally {
+      setSavingProfileHandicap(null);
+    }
   };
 
   return (
@@ -433,12 +446,30 @@ function Home() {
 
               {profiles.length > 0 && (
                 <details className="mt-3">
-                  <summary className="cursor-pointer text-xs font-bold text-white/55">Manage saved players</summary>
-                  <div className="mt-2 space-y-1">
+                  <summary className="cursor-pointer text-xs font-bold text-white/65">Manage saved players</summary>
+                  <div className="mt-2 space-y-2">
                     {profiles.map((profile) => (
-                      <div key={profile.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-2 py-1.5">
-                        <span className="text-xs text-white/75">{profile.name}</span>
-                        <button type="button" onClick={() => removeProfile(profile.id)} className="text-xs font-bold text-red-300 hover:text-red-200">
+                      <div key={profile.id} className="grid grid-cols-[minmax(0,1fr)_78px_auto] items-center gap-2 rounded-xl border border-white/10 bg-white/8 px-2.5 py-2">
+                        <span className="truncate text-sm font-bold text-white/85">{profile.name}</span>
+                        <label className="relative">
+                          <span className="sr-only">{profile.name} handicap</span>
+                          <input
+                            key={`${profile.id}-${profile.handicap}`}
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            inputMode="decimal"
+                            defaultValue={profile.handicap}
+                            onBlur={(event) => saveProfileHandicap(profile.id, event.currentTarget.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") event.currentTarget.blur();
+                            }}
+                            disabled={savingProfileHandicap === profile.id}
+                            className="w-full rounded-lg border border-sky-100/25 bg-sky-950/25 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-lime-300 disabled:opacity-60"
+                          />
+                          <span className="pointer-events-none absolute -top-1.5 left-2 rounded bg-sky-900 px-1 text-[8px] font-black uppercase tracking-wider text-sky-100">Hcp</span>
+                        </label>
+                        <button type="button" onClick={() => removeProfile(profile.id)} className="rounded-lg px-2 py-1.5 text-xs font-bold text-red-200 hover:bg-red-400/10 hover:text-white">
                           Delete
                         </button>
                       </div>
@@ -584,4 +615,3 @@ function Home() {
     </div>
   );
 }
-
