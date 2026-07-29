@@ -1,0 +1,1 @@
+ALTER TABLE "scores" ADD COLUMN "penalties" integer DEFAULT 0 NOT NULL;

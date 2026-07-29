@@ -135,7 +135,16 @@ export const updatePlayerTee = createServerFn({ method: "POST" })
   });
 
 export const upsertScore = createServerFn({ method: "POST" })
-  .inputValidator((data: { roundId: number; playerId: number; holeNumber: number; strokes: number; putts?: number | null }) => data)
+  .inputValidator(
+    (data: {
+      roundId: number;
+      playerId: number;
+      holeNumber: number;
+      strokes: number;
+      putts?: number | null;
+      penalties?: number;
+    }) => data,
+  )
   .handler(async ({ data }) => {
     if (data.holeNumber < 1 || data.holeNumber > 18) {
       throw new Error("Hole number must be between 1 and 18");
@@ -146,6 +155,10 @@ export const upsertScore = createServerFn({ method: "POST" })
     if (data.putts !== undefined && data.putts !== null && (!Number.isInteger(data.putts) || data.putts < 0 || data.putts > 10)) {
       throw new Error("Putts must be a whole number between 0 and 10");
     }
+    if (data.penalties !== undefined && (!Number.isInteger(data.penalties) || data.penalties < 0 || data.penalties > 20)) {
+      throw new Error("Penalties must be a whole number between 0 and 20");
+    }
+    const penalties = data.penalties ?? 0;
     const existing = await db
       .select()
       .from(scores)
@@ -159,7 +172,7 @@ export const upsertScore = createServerFn({ method: "POST" })
     if (existing.length > 0) {
       await db
         .update(scores)
-        .set({ strokes: data.strokes, putts: data.putts ?? null })
+        .set({ strokes: data.strokes, putts: data.putts ?? null, penalties })
         .where(eq(scores.id, existing[0].id));
     } else {
       await db.insert(scores).values({
@@ -168,6 +181,7 @@ export const upsertScore = createServerFn({ method: "POST" })
         holeNumber: data.holeNumber,
         strokes: data.strokes,
         putts: data.putts ?? null,
+        penalties,
       });
     }
     return { success: true };
