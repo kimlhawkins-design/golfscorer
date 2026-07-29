@@ -34,6 +34,17 @@ export const deletePlayerProfile = createServerFn({ method: "POST" })
     return { success: true };
   });
 
+export const updatePlayerProfileHandicap = createServerFn({ method: "POST" })
+  .inputValidator((data: { id: number; handicap: number }) => data)
+  .handler(async ({ data }) => {
+    const handicap = Math.max(0, Math.round((data.handicap || 0) * 10) / 10);
+    await db
+      .update(playerProfiles)
+      .set({ handicap })
+      .where(eq(playerProfiles.id, data.id));
+    return { success: true, handicap };
+  });
+
 
 
 export const getCourseSetupData = createServerFn({ method: "GET" }).handler(async () => {
