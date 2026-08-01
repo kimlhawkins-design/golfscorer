@@ -176,6 +176,7 @@ function RoundPage() {
   const [gpsHole, setGpsHole] = useState(1);
   const [holeInputs, setHoleInputs] = useState<Record<number, string>>({});
   const [puttInputs, setPuttInputs] = useState<Record<number, string>>({});
+  const [sandInputs, setSandInputs] = useState<Record<number, string>>({});
   const [penaltyInputs, setPenaltyInputs] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
   const [editingHcp, setEditingHcp] = useState(false);
@@ -282,16 +283,19 @@ function RoundPage() {
   const openHole = (hole: number) => {
     const inputs: Record<number, string> = {};
     const putts: Record<number, string> = {};
+    const sand: Record<number, string> = {};
     const penalties: Record<number, string> = {};
     for (const p of players) {
       const existing = getScore(p.id, hole);
       const existingScore = scores.find((s) => s.playerId === p.id && s.holeNumber === hole);
       inputs[p.id] = existing !== undefined ? String(existing) : "";
       putts[p.id] = existingScore?.putts !== null && existingScore?.putts !== undefined ? String(existingScore.putts) : "";
+      sand[p.id] = String(existingScore?.sand ?? 0);
       penalties[p.id] = String(existingScore?.penalties ?? 0);
     }
     setHoleInputs(inputs);
     setPuttInputs(putts);
+    setSandInputs(sand);
     setPenaltyInputs(penalties);
     setActiveHole(hole);
     setSelectedHole(hole);
@@ -309,6 +313,13 @@ function RoundPage() {
     setPuttInputs((current) => ({
       ...current,
       [playerId]: next === "" ? "" : String(Math.max(0, Math.min(10, next))),
+    }));
+  };
+
+  const setPlayerSand = (playerId: number, next: number) => {
+    setSandInputs((current) => ({
+      ...current,
+      [playerId]: String(Math.max(0, Math.min(20, next))),
     }));
   };
 
@@ -337,6 +348,8 @@ function RoundPage() {
         const strokes = parseInt(val, 10);
         const rawPutts = puttInputs[p.id];
         const putts = rawPutts === "" || rawPutts === undefined ? null : parseInt(rawPutts, 10);
+        const rawSand = sandInputs[p.id];
+        const sand = rawSand === undefined ? 0 : parseInt(rawSand, 10);
         const rawPenalties = penaltyInputs[p.id];
         const penalties = rawPenalties === undefined ? 0 : parseInt(rawPenalties, 10);
         if (!Number.isNaN(strokes) && strokes > 0) {
@@ -347,6 +360,7 @@ function RoundPage() {
               holeNumber: activeHole,
               strokes,
               putts: putts !== null && !Number.isNaN(putts) ? putts : null,
+              sand: Number.isNaN(sand) ? 0 : sand,
               penalties: Number.isNaN(penalties) ? 0 : penalties,
             },
           });
@@ -551,7 +565,7 @@ function RoundPage() {
   );
 
   return (
-    <div className="min-h-screen app-bg-green">
+    <div className="min-h-screen app-bg-sky">
       <div className="max-w-3xl mx-auto px-4 pb-28 pt-8 sm:pb-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -634,6 +648,7 @@ function RoundPage() {
               {players.map((p) => {
                 const strokes = holeInputs[p.id] ? parseInt(holeInputs[p.id], 10) : undefined;
                 const putts = puttInputs[p.id] ? parseInt(puttInputs[p.id], 10) : undefined;
+                const sand = parseInt(sandInputs[p.id] ?? "0", 10);
                 const penalties = parseInt(penaltyInputs[p.id] ?? "0", 10);
                 const par = parsOf(p.id)[activeHole - 1];
                 const label = strokes ? scoreLabel(strokes, par) : null;
@@ -736,6 +751,34 @@ function RoundPage() {
                           setPlayerPutts(p.id, Number.isNaN(cur) ? 1 : cur + 1);
                         }}
                         className="app-icon-btn h-12 min-w-[60px] rounded-xl border border-sky-300/35 bg-sky-400 text-slate-950 shadow-lg shadow-sky-400/10 hover:bg-sky-300"
+                      >
+                        <Plus className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-[60px_1fr_60px] items-center gap-3">
+                      <button
+                        type="button"
+                        aria-label={"Decrease " + p.name + " sand shots"}
+                        onClick={() => setPlayerSand(p.id, sand - 1)}
+                        className="app-icon-btn h-12 min-w-[60px] rounded-xl border border-white/10 text-white"
+                        style={{ backgroundColor: "#343b38" }}
+                      >
+                        <Minus className="h-5 w-5" aria-hidden="true" />
+                      </button>
+
+                      <div className="h-12 rounded-xl border border-white/10 text-center" style={{ backgroundColor: "#101413" }}>
+                        <div className="pt-1 text-yellow-100/60 text-[10px] uppercase tracking-wider">Sand</div>
+                        <div className="text-white font-black text-2xl leading-6 tabular-nums">
+                          {sand}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        aria-label={"Increase " + p.name + " sand shots"}
+                        onClick={() => setPlayerSand(p.id, sand + 1)}
+                        className="app-icon-btn h-12 min-w-[60px] rounded-xl border border-yellow-200/40 bg-yellow-200 text-slate-950 shadow-lg shadow-yellow-200/10 hover:bg-yellow-100"
                       >
                         <Plus className="h-5 w-5" aria-hidden="true" />
                       </button>
