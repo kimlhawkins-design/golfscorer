@@ -14,12 +14,12 @@ code {
     monospace;
 }
 
-/* Shared app shell. A charcoal-first base keeps the UI from becoming green-on-green;
-   golf green is reserved for actions, active states, and field/course accents. */
-.app-bg-green {
+/* Shared app shell. A deep sky-blue base keeps white text and the charcoal panels
+   legible; golf green is reserved for actions, active states, and course accents. */
+.app-bg-sky {
   background:
-    radial-gradient(circle at 50% -10%, rgba(34, 197, 94, 0.2), transparent 34rem),
-    linear-gradient(135deg, #101612 0%, #17211c 46%, #0f1915 100%);
+    radial-gradient(circle at 50% -10%, rgba(125, 211, 252, 0.3), transparent 34rem),
+    linear-gradient(135deg, #0b2e4a 0%, #14527d 46%, #0a2942 100%);
 }
 
 .app-panel {

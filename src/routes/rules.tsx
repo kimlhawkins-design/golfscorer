@@ -62,7 +62,7 @@ const RULES: { title: string; body: string; bullets?: string[] }[] = [
 
 function Rules() {
   return (
-    <div className="min-h-screen app-bg-green">
+    <div className="min-h-screen app-bg-sky">
       <div className="max-w-2xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-8">

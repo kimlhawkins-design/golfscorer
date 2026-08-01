@@ -35,6 +35,8 @@ export const scores = pgTable("scores", {
   holeNumber: integer("hole_number").notNull(),
   strokes: integer().notNull(),
   putts: integer("putts"),
+  // Bunker shots played on the hole, tracked alongside putts and penalties.
+  sand: integer("sand").notNull().default(0),
   penalties: integer("penalties").notNull().default(0),
 });
 

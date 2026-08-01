@@ -1,0 +1,1 @@
+ALTER TABLE "scores" ADD COLUMN "sand" integer DEFAULT 0 NOT NULL;

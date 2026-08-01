@@ -142,6 +142,7 @@ export const upsertScore = createServerFn({ method: "POST" })
       holeNumber: number;
       strokes: number;
       putts?: number | null;
+      sand?: number;
       penalties?: number;
     }) => data,
   )
@@ -155,9 +156,13 @@ export const upsertScore = createServerFn({ method: "POST" })
     if (data.putts !== undefined && data.putts !== null && (!Number.isInteger(data.putts) || data.putts < 0 || data.putts > 10)) {
       throw new Error("Putts must be a whole number between 0 and 10");
     }
+    if (data.sand !== undefined && (!Number.isInteger(data.sand) || data.sand < 0 || data.sand > 20)) {
+      throw new Error("Sand shots must be a whole number between 0 and 20");
+    }
     if (data.penalties !== undefined && (!Number.isInteger(data.penalties) || data.penalties < 0 || data.penalties > 20)) {
       throw new Error("Penalties must be a whole number between 0 and 20");
     }
+    const sand = data.sand ?? 0;
     const penalties = data.penalties ?? 0;
     const existing = await db
       .select()
@@ -172,7 +177,7 @@ export const upsertScore = createServerFn({ method: "POST" })
     if (existing.length > 0) {
       await db
         .update(scores)
-        .set({ strokes: data.strokes, putts: data.putts ?? null, penalties })
+        .set({ strokes: data.strokes, putts: data.putts ?? null, sand, penalties })
         .where(eq(scores.id, existing[0].id));
     } else {
       await db.insert(scores).values({
@@ -181,6 +186,7 @@ export const upsertScore = createServerFn({ method: "POST" })
         holeNumber: data.holeNumber,
         strokes: data.strokes,
         putts: data.putts ?? null,
+        sand,
         penalties,
       });
     }
