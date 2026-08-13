@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { setHoleLocation } from "../server/golf.functions";
+import { holeCoordinatesFor } from "../courses";
 
 export type HoleLocation = {
   id: number;
@@ -128,14 +129,20 @@ export function GpsRangefinder({
   };
 
   const loc = locations.find((l) => l.holeNumber === hole);
+  // A point marked on the ground wins; otherwise use any coordinates the course
+  // ships, so the rangefinder reads distances before anything has been marked.
+  const builtIn = holeCoordinatesFor(course, hole);
   const green =
     loc && loc.greenLat !== null && loc.greenLng !== null
       ? { lat: loc.greenLat, lng: loc.greenLng }
-      : null;
+      : builtIn?.green ?? null;
   const tee =
     loc && loc.teeLat !== null && loc.teeLng !== null
       ? { lat: loc.teeLat, lng: loc.teeLng }
-      : null;
+      : builtIn?.tee ?? null;
+
+  const markedTee = Boolean(loc && loc.teeLat !== null && loc.teeLng !== null);
+  const markedGreen = Boolean(loc && loc.greenLat !== null && loc.greenLng !== null);
 
   const markPoint = async (point: "tee" | "green") => {
     if (!position) return;
@@ -234,7 +241,7 @@ export function GpsRangefinder({
           disabled={!position || saving !== null}
           className="app-btn app-btn-secondary flex-1 py-2.5 text-sm disabled:opacity-40"
         >
-          {saving === "tee" ? "Marking…" : tee ? "Re-mark Tee" : "Mark Tee Here"}
+          {saving === "tee" ? "Marking…" : markedTee ? "Re-mark Tee" : "Mark Tee Here"}
         </button>
         <button
           onClick={() => markPoint("green")}
@@ -243,7 +250,7 @@ export function GpsRangefinder({
         >
           {saving === "green"
             ? "Marking…"
-            : green
+            : markedGreen
             ? "Re-mark Green"
             : "Mark Green Here"}
         </button>

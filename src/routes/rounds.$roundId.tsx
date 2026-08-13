@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ClipboardList, Flag, MapPin, Minus, PencilLine, Plus, ScrollText, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteScore, getRound, upsertScore, updatePlayerHandicap, updatePlayerTee } from "../server/golf.functions";
-import { getCourse, getTee, parsFor, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
+import { getCourse, getTee, holeCoordinatesFor, parsFor, stablefordPoints, strokesReceived, type TeeKey } from "../courses";
 import { GpsRangefinder } from "../components/GpsRangefinder";
 import { FairwayMap } from "../components/FairwayMap";
 
@@ -412,14 +412,18 @@ function RoundPage() {
   const selectedDistance = DIST[selectedHole - 1];
   const selectedStrokeIndex = SI[selectedHole - 1];
   const selectedLocation = holeLocations.find((l) => l.holeNumber === selectedHole);
+  // Points marked on the ground win; otherwise fall back to any coordinates the
+  // course itself ships, so courses like Murray Downs have a satellite view
+  // from the first round played there.
+  const selectedBuiltIn = holeCoordinatesFor(round.course, selectedHole);
   const selectedTeeLocation =
     selectedLocation && selectedLocation.teeLat !== null && selectedLocation.teeLng !== null
       ? { lat: selectedLocation.teeLat, lng: selectedLocation.teeLng }
-      : null;
+      : selectedBuiltIn?.tee ?? null;
   const selectedGreenLocation =
     selectedLocation && selectedLocation.greenLat !== null && selectedLocation.greenLng !== null
       ? { lat: selectedLocation.greenLat, lng: selectedLocation.greenLng }
-      : null;
+      : selectedBuiltIn?.green ?? null;
   const hasSatelliteLayout = Boolean(import.meta.env.VITE_MAPBOX_TOKEN && selectedTeeLocation && selectedGreenLocation);
 
   const goToHole = (hole: number) => {

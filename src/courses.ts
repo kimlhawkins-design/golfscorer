@@ -19,12 +19,28 @@ export type Tee = {
 
 export type TeeKey = "mens" | "womens";
 
+export type LatLng = {
+  lat: number;
+  lng: number;
+};
+
+// Surveyed tee and green coordinates for a hole. Where a course ships these,
+// the Mapbox satellite view and the GPS rangefinder work from the first round
+// played there — no need to walk the course marking each point by hand first.
+// Anything a player marks on the ground still takes precedence over these.
+export type HoleCoordinates = {
+  tee: LatLng;
+  green: LatLng;
+};
+
 export type Course = {
   key: string;
   name: string;
   pars: number[];
   mens: Tee;
   womens: Tee;
+  // Optional surveyed coordinates for holes 1–18, in hole order.
+  holeCoordinates?: HoleCoordinates[];
 };
 
 export const COURSES: Course[] = [
@@ -234,6 +250,46 @@ export const COURSES: Course[] = [
     },
   },
   {
+    key: "murray-downs",
+    name: "Murray Downs Golf & Country Club",
+    // Par 72 championship layout at Murray Downs NSW, across the river from
+    // Swan Hill. Pars and stroke indexes come from the club card; distances are
+    // the black (championship) tees converted from the published yardages, and
+    // the women's set is the red tees. The club publishes a single stroke index
+    // shared by both cards, so men's and women's carry the same ranking.
+    pars: [4, 3, 4, 5, 3, 4, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4],
+    mens: {
+      strokeIndex: [13, 9, 7, 5, 1, 3, 17, 11, 15, 10, 18, 16, 6, 14, 8, 12, 2, 4],
+      distances: [315, 177, 378, 525, 194, 385, 456, 349, 311, 348, 126, 460, 387, 357, 168, 472, 376, 406],
+    },
+    womens: {
+      strokeIndex: [13, 9, 7, 5, 1, 3, 17, 11, 15, 10, 18, 16, 6, 14, 8, 12, 2, 4],
+      distances: [271, 152, 325, 451, 167, 331, 392, 300, 267, 299, 108, 395, 332, 307, 144, 405, 323, 349],
+    },
+    // Tee and green positions for all 18 holes, so the satellite hole view and
+    // the rangefinder are live here before anyone marks a point on the ground.
+    holeCoordinates: [
+      { tee: { lat: -35.350014, lng: 143.609627 }, green: { lat: -35.352201, lng: 143.612013 } },
+      { tee: { lat: -35.351971, lng: 143.612491 }, green: { lat: -35.353013, lng: 143.613916 } },
+      { tee: { lat: -35.352233, lng: 143.614029 }, green: { lat: -35.348962, lng: 143.614725 } },
+      { tee: { lat: -35.349409, lng: 143.615233 }, green: { lat: -35.353955, lng: 143.614260 } },
+      { tee: { lat: -35.354488, lng: 143.614093 }, green: { lat: -35.353108, lng: 143.612600 } },
+      { tee: { lat: -35.353517, lng: 143.612064 }, green: { lat: -35.350662, lng: 143.609684 } },
+      { tee: { lat: -35.350584, lng: 143.609150 }, green: { lat: -35.353922, lng: 143.611852 } },
+      { tee: { lat: -35.354273, lng: 143.611170 }, green: { lat: -35.353702, lng: 143.607542 } },
+      { tee: { lat: -35.353291, lng: 143.607463 }, green: { lat: -35.350668, lng: 143.608037 } },
+      { tee: { lat: -35.350204, lng: 143.607881 }, green: { lat: -35.352976, lng: 143.606412 } },
+      { tee: { lat: -35.353387, lng: 143.607064 }, green: { lat: -35.353437, lng: 143.605612 } },
+      { tee: { lat: -35.352923, lng: 143.604835 }, green: { lat: -35.350810, lng: 143.600489 } },
+      { tee: { lat: -35.350233, lng: 143.600424 }, green: { lat: -35.347802, lng: 143.597378 } },
+      { tee: { lat: -35.347196, lng: 143.597665 }, green: { lat: -35.349231, lng: 143.600576 } },
+      { tee: { lat: -35.348940, lng: 143.601332 }, green: { lat: -35.347774, lng: 143.600346 } },
+      { tee: { lat: -35.347290, lng: 143.601739 }, green: { lat: -35.348359, lng: 143.606596 } },
+      { tee: { lat: -35.349599, lng: 143.607239 }, green: { lat: -35.351843, lng: 143.604141 } },
+      { tee: { lat: -35.353065, lng: 143.605453 }, green: { lat: -35.350000, lng: 143.607483 } },
+    ],
+  },
+  {
     key: "thurgoona",
     name: "Thurgoona",
     pars: [5, 4, 4, 3, 4, 4, 5, 3, 4, 4, 3, 4, 4, 5, 3, 4, 4, 5],
@@ -273,6 +329,17 @@ export function getCourse(key: string | null | undefined): Course {
 // Resolve the tee set (men's or women's) for a course.
 export function getTee(course: Course, tee: TeeKey): Tee {
   return tee === "womens" ? course.womens : course.mens;
+}
+
+// Surveyed tee and green coordinates a course ships for a hole, if it has any.
+// Used as the starting point for the satellite view and the rangefinder; a
+// point a player marks on the ground overrides whatever is returned here.
+export function holeCoordinatesFor(
+  courseKey: string | null | undefined,
+  hole: number,
+): HoleCoordinates | null {
+  const coords = COURSES.find((c) => c.key === courseKey)?.holeCoordinates;
+  return coords?.[hole - 1] ?? null;
 }
 
 // Resolve the 18-hole par array for a tee, falling back to the course's base
