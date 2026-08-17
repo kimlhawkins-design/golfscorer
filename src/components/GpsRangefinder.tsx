@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { setHoleLocation } from "../server/golf.functions";
@@ -84,20 +84,25 @@ export function GpsRangefinder({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<"tee" | "green" | null>(null);
   const watchId = useRef<number | null>(null);
+  // Set once the player taps Stop, so the auto-start and the resume-on-wake
+  // handler below don't turn the GPS back on behind their back.
+  const stoppedByUser = useRef(false);
 
-  useEffect(() => {
-    return () => {
-      if (watchId.current !== null && typeof navigator !== "undefined") {
-        navigator.geolocation.clearWatch(watchId.current);
-      }
-    };
+  const clearWatch = useCallback(() => {
+    if (watchId.current !== null && typeof navigator !== "undefined") {
+      navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
+    }
   }, []);
 
-  const startGps = () => {
+  const startGps = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setError("Geolocation is not supported on this device.");
       return;
     }
+    stoppedByUser.current = false;
+    // Replace any existing watch so a resume never leaks a second subscription.
+    clearWatch();
     setError(null);
     setWatching(true);
     watchId.current = navigator.geolocation.watchPosition(
@@ -118,15 +123,35 @@ export function GpsRangefinder({
       },
       { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 },
     );
-  };
+  }, [clearWatch]);
 
-  const stopGps = () => {
-    if (watchId.current !== null && typeof navigator !== "undefined") {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
+  const stopGps = useCallback(() => {
+    stoppedByUser.current = true;
+    clearWatch();
     setWatching(false);
-  };
+  }, [clearWatch]);
+
+  // The round view mounts this once and keeps it mounted for all 18 holes, so
+  // starting here means the rangefinder is live from the first tee onwards and
+  // simply re-targets as the player moves between holes.
+  useEffect(() => {
+    startGps();
+    return clearWatch;
+  }, [startGps, clearWatch]);
+
+  // Phones suspend watchPosition while the screen is off or the tab is hidden,
+  // and some never resume delivering fixes. Re-arm the watch on wake so the
+  // distances are live again by the time the player looks at their next shot.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (stoppedByUser.current) return;
+      startGps();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [startGps]);
 
   const loc = locations.find((l) => l.holeNumber === hole);
   // A point marked on the ground wins; otherwise use any coordinates the course
@@ -170,18 +195,28 @@ export function GpsRangefinder({
           GPS Rangefinder
         </h2>
         {watching ? (
-          <button
-            onClick={stopGps}
-            className="app-btn app-btn-secondary min-h-9 px-3 py-1.5 text-xs"
-          >
-            Stop
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-white/50 text-[11px] font-semibold uppercase tracking-wider">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  position ? "bg-lime-400" : "bg-amber-400 animate-pulse"
+                }`}
+              />
+              Live
+            </span>
+            <button
+              onClick={stopGps}
+              className="app-btn app-btn-secondary min-h-9 px-3 py-1.5 text-xs"
+            >
+              Stop
+            </button>
+          </div>
         ) : (
           <button
             onClick={startGps}
             className="app-btn app-btn-primary min-h-9 px-3 py-1.5 text-xs"
           >
-            Start GPS
+            {error ? "Retry GPS" : "Resume GPS"}
           </button>
         )}
       </div>
@@ -229,8 +264,8 @@ export function GpsRangefinder({
         </p>
       ) : (
         <p className="text-white/40 text-xs text-center mb-3">
-          Start GPS to see live distances. Stand on the tee or green and mark it
-          to set up this course.
+          GPS is paused. Resume it to see live distances. Stand on the tee or
+          green and mark it to set up this course.
         </p>
       )}
 
