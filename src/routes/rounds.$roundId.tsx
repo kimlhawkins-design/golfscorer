@@ -366,7 +366,11 @@ function RoundPage() {
           });
         }
       }
-      setActiveHole(null);
+      if (activeHole < 18) {
+        openHole(activeHole + 1);
+      } else {
+        setActiveHole(null);
+      }
       router.invalidate();
     } finally {
       setSaving(false);
@@ -820,7 +824,7 @@ function RoundPage() {
               })}
             </div>
 
-            <div className="grid grid-cols-1 gap-3 border-t border-white/10 p-3 sm:grid-cols-2" style={{ backgroundColor: "#101413" }}>
+            <div className="grid grid-cols-1 gap-3 border-t border-white/10 p-3" style={{ backgroundColor: "#101413" }}>
               <button
                 onClick={saveHole}
                 disabled={saving}
@@ -828,20 +832,6 @@ function RoundPage() {
               >
                 {saving ? "Saving..." : "Save hole"}
               </button>
-              {activeHole < 18 && (
-                <button
-                  onClick={async () => {
-                    const nextHole = activeHole + 1;
-                    await saveHole();
-                    openHole(nextHole);
-                  }}
-                  disabled={saving}
-                  className="app-btn min-h-14 border border-white/10 px-4 py-3 text-white disabled:opacity-50"
-                    style={{ backgroundColor: "#303836" }}
-                >
-                  Save and next
-                </button>
-              )}
             </div>
           </div>
         )}
