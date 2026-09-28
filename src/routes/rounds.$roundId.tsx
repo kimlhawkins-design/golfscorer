@@ -309,24 +309,46 @@ function RoundPage() {
     }));
   };
 
+  // Putts, sand shots and penalties all count toward the hole score, so any
+  // change to those counters moves the score by the same amount.
+  const bumpPlayerHoleScore = (playerId: number, delta: number) => {
+    if (delta === 0) return;
+    setHoleInputs((current) => {
+      const cur = parseInt(current[playerId] || "", 10);
+      const base = Number.isNaN(cur) ? 0 : cur;
+      const next = base + delta;
+      if (next < 1) return { ...current, [playerId]: Number.isNaN(cur) ? "" : "1" };
+      return { ...current, [playerId]: String(Math.min(20, next)) };
+    });
+  };
+
   const setPlayerPutts = (playerId: number, next: number | "") => {
+    const prev = parseInt(puttInputs[playerId] || "", 10);
+    const clamped = next === "" ? "" : Math.max(0, Math.min(10, next));
+    bumpPlayerHoleScore(playerId, (clamped === "" ? 0 : clamped) - (Number.isNaN(prev) ? 0 : prev));
     setPuttInputs((current) => ({
       ...current,
-      [playerId]: next === "" ? "" : String(Math.max(0, Math.min(10, next))),
+      [playerId]: clamped === "" ? "" : String(clamped),
     }));
   };
 
   const setPlayerSand = (playerId: number, next: number) => {
+    const prev = parseInt(sandInputs[playerId] || "0", 10);
+    const clamped = Math.max(0, Math.min(20, next));
+    bumpPlayerHoleScore(playerId, clamped - (Number.isNaN(prev) ? 0 : prev));
     setSandInputs((current) => ({
       ...current,
-      [playerId]: String(Math.max(0, Math.min(20, next))),
+      [playerId]: String(clamped),
     }));
   };
 
   const setPlayerPenalties = (playerId: number, next: number) => {
+    const prev = parseInt(penaltyInputs[playerId] || "0", 10);
+    const clamped = Math.max(0, Math.min(20, next));
+    bumpPlayerHoleScore(playerId, clamped - (Number.isNaN(prev) ? 0 : prev));
     setPenaltyInputs((current) => ({
       ...current,
-      [playerId]: String(Math.max(0, Math.min(20, next))),
+      [playerId]: String(clamped),
     }));
   };
 
