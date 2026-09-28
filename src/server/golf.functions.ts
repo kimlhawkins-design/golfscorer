@@ -27,7 +27,24 @@ export const createPlayerProfile = createServerFn({ method: "POST" })
     return profile;
   });
 
-export const deletePlayerProfile = createServerFn({ method: "POST" })
+export const updatePlayerProfile = createServerFn({ method: "POST" })
+  .inputValidator((data: { id: number; name: string; handicap: number; tee: "mens" | "womens" }) => data)
+  .handler(async ({ data }) => {
+    const name = data.name.trim();
+    if (!name) throw new Error("Player name is required");
+    const [profile] = await db
+      .update(playerProfiles)
+      .set({
+        name,
+        handicap: Math.max(0, Math.round((data.handicap || 0) * 10) / 10),
+        tee: data.tee === "womens" ? "womens" : "mens",
+      })
+      .where(eq(playerProfiles.id, data.id))
+      .returning();
+    return profile;
+  });
+
+export const deletePlayerProfile =createServerFn({ method: "POST" })
   .inputValidator((data: { id: number }) => data)
   .handler(async ({ data }) => {
     await db.delete(playerProfiles).where(eq(playerProfiles.id, data.id));

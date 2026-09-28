@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getRounds, createRound, deleteRound, getPlayerProfiles, createPlayerProfile, deletePlayerProfile, getCourseSetupData, saveCourseNote, createCourseSetupRound } from "../server/golf.functions";
+import { getRounds, createRound, deleteRound, getPlayerProfiles, createPlayerProfile, updatePlayerProfile, deletePlayerProfile, getCourseSetupData, saveCourseNote, createCourseSetupRound } from "../server/golf.functions";
 import { COURSES, DEFAULT_COURSE_KEY, getCourse, type TeeKey } from "../courses";
 
 export const Route = createFileRoute("/")({
@@ -154,6 +154,180 @@ function CourseSetupPanel({
   );
 }
 
+type PlayerProfile = { id: number; name: string; handicap: number; tee: string };
+
+const parseHandicap = (value: string) => Math.max(0, Math.round((parseFloat(value || "0") || 0) * 10) / 10);
+
+function TeeToggle({ value, onChange }: { value: TeeKey; onChange: (tee: TeeKey) => void }) {
+  return (
+    <div className="app-segmented text-xs">
+      {(["mens", "womens"] as const).map((t) => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => onChange(t)}
+          className={`px-3 py-2 font-bold transition-colors ${
+            value === t ? "bg-lime-500 text-white" : "text-lime-100 hover:bg-white/10"
+          }`}
+        >
+          {t === "mens" ? "Men's" : "Women's"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PlayerRow({ profile, router }: { profile: PlayerProfile; router: { invalidate: () => void } }) {
+  const updateProfileFn = useServerFn(updatePlayerProfile);
+  const deleteProfileFn = useServerFn(deletePlayerProfile);
+  const initialTee: TeeKey = profile.tee === "womens" ? "womens" : "mens";
+  const [name, setName] = useState(profile.name);
+  const [handicap, setHandicap] = useState(String(profile.handicap ?? 0));
+  const [tee, setTee] = useState<TeeKey>(initialTee);
+  const [saving, setSaving] = useState(false);
+
+  const dirty =
+    name.trim() !== profile.name || parseHandicap(handicap) !== profile.handicap || tee !== initialTee;
+
+  const save = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await updateProfileFn({ data: { id: profile.id, name: name.trim(), handicap: parseHandicap(handicap), tee } });
+      router.invalidate();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!confirm(`Delete ${profile.name}?`)) return;
+    await deleteProfileFn({ data: { id: profile.id } });
+    router.invalidate();
+  };
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-2">
+      <div className="grid grid-cols-[1fr_72px] gap-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          aria-label="Player name"
+          className="min-w-0 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-lime-400"
+        />
+        <input
+          type="number"
+          min="0"
+          step="0.1"
+          inputMode="decimal"
+          value={handicap}
+          onChange={(e) => setHandicap(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && dirty && save()}
+          aria-label={`${profile.name} handicap`}
+          className="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-center text-sm text-white focus:outline-none focus:ring-2 focus:ring-lime-400"
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <TeeToggle value={tee} onChange={setTee} />
+        <div className="ml-auto flex items-center gap-2">
+          <button type="button" onClick={remove} className="px-2 py-2 text-xs font-bold text-red-300 hover:text-red-200">
+            Delete
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={!dirty || saving || !name.trim()}
+            className="rounded-lg bg-lime-400 px-3 py-2 text-xs font-black text-slate-950 disabled:opacity-40"
+          >
+            {saving ? "Saving..." : "Update"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlayersPanel({ profiles, router }: { profiles: PlayerProfile[]; router: { invalidate: () => void } }) {
+  const createProfileFn = useServerFn(createPlayerProfile);
+  const [name, setName] = useState("");
+  const [handicap, setHandicap] = useState("");
+  const [tee, setTee] = useState<TeeKey>("mens");
+  const [saving, setSaving] = useState(false);
+
+  const addPlayer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await createProfileFn({ data: { name: name.trim(), handicap: parseHandicap(handicap), tee } });
+      setName("");
+      setHandicap("");
+      setTee("mens");
+      router.invalidate();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white/10 backdrop-blur rounded-2xl p-5 mb-8 border border-white/20">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <div>
+          <h2 className="text-white font-bold text-xl">Players</h2>
+          <p className="text-xs text-white/50">Add new players and keep handicaps up to date</p>
+        </div>
+        <span className="text-xs font-bold text-lime-300">{profiles.length} saved</span>
+      </div>
+
+      <form onSubmit={addPlayer} className="rounded-xl border border-lime-400/30 bg-black/15 p-3">
+        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-lime-300">New player</div>
+        <div className="grid grid-cols-[1fr_72px] gap-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Player name"
+            className="min-w-0 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-lime-400"
+          />
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            inputMode="decimal"
+            value={handicap}
+            onChange={(e) => setHandicap(e.target.value)}
+            placeholder="Hcp"
+            aria-label="New player handicap"
+            className="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-center text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-lime-400"
+          />
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <TeeToggle value={tee} onChange={setTee} />
+          <button
+            type="submit"
+            disabled={saving || !name.trim()}
+            className="ml-auto rounded-lg bg-lime-400 px-3 py-2 text-xs font-black text-slate-950 disabled:opacity-50"
+          >
+            {saving ? "Adding..." : "+ Add player"}
+          </button>
+        </div>
+      </form>
+
+      {profiles.length > 0 ? (
+        <div className="mt-4 space-y-2">
+          {profiles.map((profile) => (
+            // Key includes saved values so the row resets to fresh data after an update.
+            <PlayerRow key={`${profile.id}-${profile.name}-${profile.handicap}-${profile.tee}`} profile={profile} router={router} />
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 text-center text-sm text-white/40">No players saved yet.</p>
+      )}
+    </div>
+  );
+}
+
 function Home() {
   const { rounds, profiles, courseSetup } = Route.useLoaderData();
   const router = useRouter();
@@ -166,15 +340,9 @@ function Home() {
   const [playerHandicaps, setPlayerHandicaps] = useState(["", "", "", ""]);
   const [playerTees, setPlayerTees] = useState<TeeKey[]>(["mens", "mens", "mens", "mens"]);
   const [creating, setCreating] = useState(false);
-  const [profileName, setProfileName] = useState("");
-  const [profileHandicap, setProfileHandicap] = useState("");
-  const [profileTee, setProfileTee] = useState<TeeKey>("mens");
-  const [savingProfile, setSavingProfile] = useState(false);
 
   const createRoundFn = useServerFn(createRound);
   const deleteRoundFn = useServerFn(deleteRound);
-  const createProfileFn = useServerFn(createPlayerProfile);
-  const deleteProfileFn = useServerFn(deletePlayerProfile);
   const saveNoteFn = useServerFn(saveCourseNote);
   const createSetupRoundFn = useServerFn(createCourseSetupRound);
 
@@ -217,33 +385,6 @@ function Home() {
     setPlayerNames(names);
     setPlayerHandicaps(handicaps);
     setPlayerTees(tees);
-  };
-
-  const saveProfile = async () => {
-    const name = profileName.trim();
-    if (!name) return;
-    setSavingProfile(true);
-    try {
-      await createProfileFn({
-        data: {
-          name,
-          handicap: Math.max(0, Math.round((parseFloat(profileHandicap || "0") || 0) * 10) / 10),
-          tee: profileTee,
-        },
-      });
-      setProfileName("");
-      setProfileHandicap("");
-      setProfileTee("mens");
-      router.invalidate();
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  const removeProfile = async (id: number) => {
-    if (!confirm("Delete this saved player?")) return;
-    await deleteProfileFn({ data: { id } });
-    router.invalidate();
   };
 
   return (
@@ -371,7 +512,7 @@ function Home() {
               </div>
 
               {profiles.length > 0 && (
-                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                <div className="flex gap-2 overflow-x-auto pb-1">
                   {profiles.map((profile) => (
                     <button
                       key={profile.id}
@@ -386,65 +527,8 @@ function Home() {
                 </div>
               )}
 
-              <div className="grid grid-cols-[1fr_72px] gap-2">
-                <input
-                  type="text"
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  placeholder="Save player name"
-                  className="min-w-0 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-lime-400"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  inputMode="decimal"
-                  value={profileHandicap}
-                  onChange={(e) => setProfileHandicap(e.target.value)}
-                  placeholder="Hcp"
-                  aria-label="Saved player handicap"
-                  className="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-center text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-lime-400"
-                />
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <div className="app-segmented text-xs">
-                  {(["mens", "womens"] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setProfileTee(t)}
-                      className={`px-3 py-2 font-bold transition-colors ${
-                        profileTee === t ? "bg-lime-500 text-white" : "text-lime-100 hover:bg-white/10"
-                      }`}
-                    >
-                      {t === "mens" ? "Men's" : "Women's"}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={saveProfile}
-                  disabled={savingProfile || !profileName.trim()}
-                  className="rounded-lg bg-lime-400 px-3 py-2 text-xs font-black text-slate-950 disabled:opacity-50"
-                >
-                  {savingProfile ? "Saving..." : "Save profile"}
-                </button>
-              </div>
-
-              {profiles.length > 0 && (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-xs font-bold text-white/55">Manage saved players</summary>
-                  <div className="mt-2 space-y-1">
-                    {profiles.map((profile) => (
-                      <div key={profile.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-2 py-1.5">
-                        <span className="text-xs text-white/75">{profile.name}</span>
-                        <button type="button" onClick={() => removeProfile(profile.id)} className="text-xs font-bold text-red-300 hover:text-red-200">
-                          Delete
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </details>
+              {profiles.length === 0 && (
+                <p className="text-xs text-white/45">No saved players yet — add them in the Players section on the home page.</p>
               )}
             </div>
             <div className="mb-5">
@@ -523,6 +607,9 @@ function Home() {
             </div>
           </form>
         )}
+
+        {/* Saved Players */}
+        {!showForm && <PlayersPanel profiles={profiles} router={router} />}
 
         {/* Rounds List */}
         {rounds.length > 0 && (
